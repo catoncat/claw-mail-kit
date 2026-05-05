@@ -65,27 +65,27 @@ Content-Type: application/json
 
 本仓库的 `cli/clawmail.mjs` 直接使用官方 SDK 的 WS 实现，避免重写二进制协议。
 
-## 本地 Web UI
+## Worker 本地开发
 
-启动：
+Web UI 只保留 Cloudflare Worker 这一套实现。本地开发也走 Wrangler，而不是单独的 Node Web server：
 
 ```bash
-npm run web
-# open http://127.0.0.1:8765
+cp .dev.vars.example .dev.vars
+npm run cf:migrate:local
+npm run cf:dev
 ```
 
-Web UI 只把 `CLAW_USER` 暴露给浏览器；`CLAW_API_KEY` 保留在本地 Node server 进程里。
+打开 Wrangler 输出的本地 URL。这样本地调试和线上部署使用同一套 `/api/*` Worker 路由、D1 schema、刷新逻辑和静态资源。
 
 页面能力：
 
+- Cloudflare Access 保护后的邮箱连接/验证码登录。
 - 文件夹和收件箱未读数。
-- 左侧是两个互相独立的选择器：
-  - 「邮箱范围」：选择 `全部邮箱` 或某一个主/子邮箱。
-  - 「邮箱文件夹」：始终显示同一套文件夹；在 `全部邮箱` 下表示聚合所有启用邮箱的该文件夹，在单邮箱下表示该邮箱自己的该文件夹。
+- 「邮箱范围」选择 `全部邮箱` 或某一个主/子邮箱。
 - 收件箱列表、搜索、只看未读。
 - 读信：正文放在 sandboxed iframe 中渲染，避免第三方邮件 HTML 直接拿到同源权限。
-- 写信和回复。
-- SSE 事件流 + SDK WebSocket watcher：单邮箱视图按当前选中的邮箱监听新邮件；聚合视图可手动刷新。
+- 写信、回复、删除、附件下载。
+- Cron / 手动刷新共用 Worker 刷新服务。
 
 ## 子邮箱管理
 
@@ -102,9 +102,9 @@ node cli/clawmail.mjs accounts disable --uid release-bot@claw.163.com --json
 node cli/clawmail.mjs accounts delete --uid release-bot@claw.163.com --json
 ```
 
-注意：`accounts create` 会返回一次性 auth code。本地 CLI/Web 都会把原始创建结果另存到 `.secrets/submailbox-create-*.json`，但它仍只应按一次性凭证处理。
+注意：`accounts create` 会返回一次性 auth code。CLI 会把原始创建结果另存到 `.secrets/submailbox-create-*.json`，但它仍只应按一次性凭证处理。
 
-子邮箱列表以 live `accounts list` 为准；Web UI 左下角点击账号即可查看单独邮箱。
+子邮箱列表以 live `accounts list` / Worker `/api/mailboxes` 为准；Web UI 左侧邮箱范围可切换单独邮箱。
 
 ## 聚合邮箱视图
 
@@ -116,10 +116,10 @@ Web UI 默认进入「全部邮箱」聚合视图：
 - 点击某封聚合邮件时，会按它的来源邮箱读取正文；回复也会用来源邮箱身份回复。
 - 点击具体邮箱可切换到单邮箱视图；此时同一套文件夹只作用于该邮箱，并支持实时监听。
 
-API：
+API 路径与线上一致；本地调试时把 `<wrangler-dev-url>` 换成 Wrangler 输出的本地 URL：
 
 ```bash
-curl 'http://127.0.0.1:8765/api/folders?aggregate=1'
-curl 'http://127.0.0.1:8765/api/messages?aggregate=1&fid=1&limit=40&preview=1'
-curl 'http://127.0.0.1:8765/api/search?aggregate=1&fid=1&keyword=hello&limit=40&preview=1'
+curl '<wrangler-dev-url>/api/folders?aggregate=1'
+curl '<wrangler-dev-url>/api/messages?aggregate=1&fid=1&limit=40'
+curl '<wrangler-dev-url>/api/search?aggregate=1&fid=1&keyword=hello&limit=40'
 ```

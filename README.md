@@ -1,12 +1,11 @@
 # Claw Mail Kit
 
-Claw Mail Kit is a repository for three related Claw 163 agent-mail surfaces: a CLI, a local browser UI, and a hosted Cloudflare Worker UI. They share protocol knowledge but have separate runtime boundaries.
+Claw Mail Kit is a repository for two product surfaces: a CLI and a Cloudflare Worker web UI. The Worker UI runs locally with Wrangler for development and deploys to Cloudflare for hosted use.
 
 It supports:
 
 - **CLI** (`cli/`) for folders, list/search/read, send/reply, realtime watch, and agent mailbox account operations;
-- **local web UI** (`local/`) served from `127.0.0.1` for single-machine use;
-- **Cloudflare Worker UI** (`worker/`) protected by Cloudflare Access, with D1-backed mailbox indexing;
+- **Cloudflare Worker UI** (`worker/`) that can run locally with `npm run cf:dev` and is protected by Cloudflare Access in production;
 - **agent skill package** (`skills/`) so users can install project guidance with `npx skills`.
 
 ## Screenshots
@@ -64,15 +63,17 @@ npm run clawmail -- read --id '<message-id>'
 npm run clawmail -- send --to person@example.com --subject 'Hello' --body 'Message body'
 ```
 
-## Local web UI
+## Worker local development
+
+Run the same Worker UI locally with Wrangler:
 
 ```bash
-npm run web
+cp .dev.vars.example .dev.vars
+npm run cf:migrate:local
+npm run cf:dev
 ```
 
-Open <http://127.0.0.1:8765>.
-
-The local UI reads `.env` and stores sensitive mail-cli state under `.secrets/`, which is ignored by Git.
+Open the local URL printed by Wrangler. This uses the Worker code path rather than a separate Node web server.
 
 ## Cloudflare Worker deployment
 
@@ -111,14 +112,6 @@ The Worker variant lives in `worker/` and serves `worker/public/` assets plus `/
    wrangler deploy
    ```
 
-For local Worker development:
-
-```bash
-cp .dev.vars.example .dev.vars
-npm run cf:migrate:local
-npm run cf:dev
-```
-
 `DEV_BYPASS_AUTH=true` is intended only for local development.
 
 ## Agent skill
@@ -144,8 +137,6 @@ npx skills add . --full-depth --list
 ## Repository layout
 
 - `cli/` — CLI and Coremail proxy helpers.
-- `local/server.mjs` — local web server.
-- `local/public/` — local web UI assets.
 - `worker/src/` — Cloudflare Worker backend.
 - `worker/public/` — Worker UI assets.
 - `worker/migrations/` — D1 migrations.
@@ -153,7 +144,7 @@ npx skills add . --full-depth --list
 - `docs/` — protocol, layout, deployment notes, screenshots, and references.
 - `vendor/` — inspected upstream package snapshots needed for reference.
 
-See `docs/project-layout.md` for the CLI/local/Worker boundary split.
+See `docs/project-layout.md` for the CLI/Worker boundary split.
 
 ## Security notes
 

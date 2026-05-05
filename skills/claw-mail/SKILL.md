@@ -1,6 +1,6 @@
 ---
 name: claw-mail
-description: "Use when a user wants an agent to operate a Claw Mail Kit checkout: configure Claw 163 agent mail, check/list/search/read mail, extract verification codes, send/reply to mail, open the local UI, or work with the Cloudflare Worker version of this repository."
+description: "Use when a user wants an agent to operate a Claw Mail Kit checkout: configure Claw 163 agent mail, check/list/search/read mail, extract verification codes, send/reply to mail, run the Worker UI locally with Wrangler, or deploy the Cloudflare Worker version of this repository."
 ---
 
 # Claw Mail Kit
@@ -17,8 +17,7 @@ Use this skill inside a cloned `claw-mail-kit` repository. Prefer repo scripts o
 ## Repo surfaces
 
 - CLI: `npm run clawmail -- ...`
-- Local web UI: `npm run web`, then open `http://127.0.0.1:8765`
-- Cloudflare Worker: `worker/`, `wrangler.jsonc`, `npm run cf:*`
+- Worker web UI: `worker/`, `wrangler.jsonc`, `npm run cf:dev`, `npm run cf:*`
 - Detailed layout: `docs/project-layout.md`
 - Protocol notes: `docs/claw-email-protocol.md`
 - Worker deployment notes: `docs/cloudflare-architecture.md`
@@ -42,18 +41,15 @@ npm run clawmail -- reply --id '<message-id>' --body 'Reply body'
 
 Use `--body-file` for long mail bodies to avoid shell quoting issues.
 
-## Local web UI
+## Worker local dev
 
 ```bash
-curl -fsS http://127.0.0.1:8765/api/me || (nohup npm run web > /tmp/claw-mail-web.log 2>&1 &)
-curl -fsS http://127.0.0.1:8765/api/me
+cp .dev.vars.example .dev.vars
+npm run cf:migrate:local
+npm run cf:dev
 ```
 
-If `8765` is already occupied by another service, start with a temporary port:
-
-```bash
-PORT=8766 nohup npm run web > /tmp/claw-mail-web-8766.log 2>&1 &
-```
+Open the local URL printed by Wrangler. Do not recreate or use a separate Node web server; the Worker path is the product web runtime.
 
 ## Cloudflare Worker work
 
