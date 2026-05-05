@@ -1,0 +1,42 @@
+{
+  "name": "@clawemail/node-sdk",
+  "version": "0.2.4",
+  "description": "Claw Email Node.js SDK — read and send emails programmatically",
+  "keywords": [
+    "email",
+    "claw",
+    "sdk",
+    "coremail"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types/packages/sdk/src/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.cjs"
+    }
+  },
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/packages/sdk/src/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "build:publish": "node build.mjs --minify",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build:publish"
+  },
+  "dependencies": {
+    "axios": "^1.13.6",
+    "form-data": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "esbuild": "^0.27.4",
+    "typescript": "^5.9.3"
+  }
+}

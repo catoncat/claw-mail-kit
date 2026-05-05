@@ -1,0 +1,19 @@
+{
+  "name": "@clawemail/claw-setup",
+  "version": "0.3.2",
+  "description": "Cross-platform OpenClaw email channel setup tool",
+  "bin": {
+    "claw-setup": "setup.mjs"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "setup.mjs"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "claw-mail-cloudflare",
+  "main": "worker/src/index.ts",
+  "compatibility_date": "2026-05-05",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./worker/public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "claw_mail",
+      "database_id": "replace-with-d1-database-id",
+      "migrations_dir": "worker/migrations"
+    }
+  ],
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "CLAW_HOST": "https://claw.163.com",
+    "REFRESH_FOLDERS": "1,3",
+    "REFRESH_LIMIT": "50",
+    "CLAW_TIMEOUT_MS": "15000"
+  }
+}

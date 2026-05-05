@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Claw Mail Cloudflare</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div id="setup" class="setup hidden">
+    <section class="card setup-card">
+      <div class="brand-line"><span class="mark">✉</span><div><h1>Claw Mail</h1><p id="accessUser">Cloudflare Access 已保护</p></div></div>
+      <p class="muted">连接 Claw 账号后，Worker 会把 API key 和 dashboard cookie 加密保存到 D1，定时轮询索引邮件。</p>
+      <form id="connectForm" class="connect-form">
+        <label>Claw 登录邮箱 <input id="loginEmail" autocomplete="email" placeholder="you@example.com" required /></label>
+        <div class="row"><button id="sendCodeBtn" type="button" class="ghost">发送验证码</button><input id="loginCode" inputmode="numeric" placeholder="验证码" /></div>
+        <button id="verifyCodeBtn" type="submit" class="primary">验证并同步</button>
+      </form>
+      <pre id="setupStatus" class="status"></pre>
+    </section>
+  </div>
+
+  <div id="app" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand"><div class="mark">✉</div><div><h1>Claw Mail</h1><p id="account">连接中…</p></div></div>
+      <button id="composeBtn" class="primary full">写邮件</button>
+      <nav class="panel"><div class="section-title">邮箱文件夹</div><div id="folders" class="folders"></div></nav>
+      <nav class="panel grow"><div class="section-title">邮箱范围</div><div id="mailboxes" class="mailboxes"></div><button id="createMailboxBtn" class="ghost full">创建子邮箱</button></nav>
+      <div class="footer"><span class="dot"></span><span id="pollingText">Cron / 手动刷新</span></div>
+    </aside>
+
+    <main class="mail-layout">
+      <section class="toolbar">
+        <form id="searchForm" class="search-box"><input id="searchInput" placeholder="搜索主题 / 发件人 / 预览" /><button>搜索</button></form>
+        <label class="small-toggle"><input id="unreadOnly" type="checkbox" /> 只看未读</label>
+        <button id="refreshBtn" class="ghost">刷新当前范围</button>
+      </section>
+      <section class="content-grid">
+        <section class="message-list-card"><div class="list-header"><div><h2 id="listTitle">收件箱</h2><p id="listMeta">加载中…</p></div></div><div id="messageList" class="message-list"></div></section>
+        <section class="reader-card">
+          <div id="emptyReader" class="empty-state"><div class="empty-icon">📬</div><h2>选一封邮件阅读</h2><p>D1 索引负责列表，正文按需读取并缓存。</p></div>
+          <article id="reader" class="reader hidden"><header><div><div id="readDate" class="meta"></div><h2 id="readSubject"></h2><p id="readFrom" class="from-line"></p></div><div class="reader-actions"><button id="markReadBtn" class="ghost">标已读</button><button id="replyBtn" class="primary">回复</button></div></header><div id="readRecipients" class="recipient-line"></div><iframe id="mailFrame" title="邮件正文" sandbox="" class="mail-frame"></iframe><div id="attachments" class="attachments"></div></article>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="composerDialog"><form method="dialog" id="composerForm" class="composer"><div class="composer-head"><div><h2 id="composerTitle">写邮件</h2><p id="composerHint">从当前邮箱身份发送</p></div><button value="cancel" class="icon-btn">×</button></div><label>收件人 <input id="composeTo" /></label><label>抄送 <input id="composeCc" /></label><label>主题 <input id="composeSubject" /></label><label>正文 <textarea id="composeBody" rows="10"></textarea></label><div class="composer-actions"><label class="small-toggle"><input id="composeHtml" type="checkbox" /> HTML</label><span id="composeStatus"></span><button id="sendBtn" type="button" class="primary">发送</button></div></form></dialog>
+  <div id="toast" class="toast hidden"></div>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

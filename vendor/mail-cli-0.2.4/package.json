@@ -1,0 +1,24 @@
+{
+  "name": "@clawemail/mail-cli",
+  "version": "0.2.4",
+  "description": "CLI tool for mail transports",
+  "bin": {
+    "mail-cli": "bin/mail-cli"
+  },
+  "scripts": {
+    "postinstall": "node scripts/cdn-install.js"
+  },
+  "clawemailCdn": {
+    "urls": {
+      "darwin-arm64": "http://mail-activity.nosdn.127.net/0.2.4/mail-cli-darwin-arm64.gz",
+      "darwin-x64": "http://mail-activity.nosdn.127.net/0.2.4/mail-cli-darwin-x64.gz",
+      "linux-x64": "http://mail-activity.nosdn.127.net/0.2.4/mail-cli-linux-x64.gz",
+      "linux-arm64": "http://mail-activity.nosdn.127.net/0.2.4/mail-cli-linux-arm64.gz",
+      "win32-x64": "http://mail-activity.nosdn.127.net/0.2.4/mail-cli-win32-x64.exe.gz"
+    }
+  },
+  "license": "ISC",
+  "publishConfig": {
+    "access": "public"
+  }
+}

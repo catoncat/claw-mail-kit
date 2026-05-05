@@ -1,0 +1,169 @@
+{
+  "id": "email",
+  "channels": ["email"],
+  "skills": ["skills/reply-user-message","skills/mail-cli"],
+  "setup": {
+    "token": {
+      "help": "Email credentials in format: email:password (e.g., \"user@163.com:yourpassword\")"
+    },
+    "name": {
+      "help": "Email address (use with --password)"
+    },
+    "password": {
+      "help": "Email password or app-specific password"
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": true,
+    "properties": {}
+  },
+  "channelConfigs": {
+    "email": {
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "启用邮件通道"
+          },
+          "allowFrom": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": ["*"],
+            "description": "允许的发件人列表，可用通配符（如 \"*@company.com\"）。作为所有账户的默认基准值"
+          },
+          "replyMode": {
+            "type": "string",
+            "enum": ["complete", "accumulated", "immediate"],
+            "default": "complete",
+            "description": "回复发送策略：complete=AI完成后发送一封（默认），accumulated=缓冲所有块后发送，immediate=每个流式块立即发送"
+          },
+          "replyTo": {
+            "type": "string",
+            "enum": ["all", "sender"],
+            "default": "all",
+            "description": "默认回复对象：all=回复发件人及所有收件人（默认），sender=仅回复发件人"
+          },
+          "accounts": {
+            "type": "object",
+            "description": "命名账户配置。使用 accounts.default 配置默认账户，其他键为账户 ID",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "账户显示名称（可选）"
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "是否启用此账户"
+                },
+                "email": {
+                  "type": "string",
+                  "description": "邮箱地址"
+                },
+                "password": {
+                  "type": "string",
+                  "description": "邮箱密码或应用专用密码"
+                },
+                "imapHost": {
+                  "type": "string",
+                  "description": "IMAP 服务器地址（留空则根据邮箱域名自动推导）"
+                },
+                "imapPort": {
+                  "type": "number",
+                  "default": 993,
+                  "description": "IMAP 端口（默认 993）"
+                },
+                "smtpHost": {
+                  "type": "string",
+                  "description": "SMTP 服务器地址（留空则根据邮箱域名自动推导）"
+                },
+                "smtpPort": {
+                  "type": "number",
+                  "default": 465,
+                  "description": "SMTP 端口（默认 465）"
+                },
+                "allowFrom": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "覆盖顶层 allowFrom 的账户级发件人白名单"
+                },
+                "replyMode": {
+                  "type": "string",
+                  "enum": ["complete", "accumulated", "immediate"],
+                  "description": "账户级回复发送策略，覆盖全局 replyMode"
+                },
+                "replyTo": {
+                  "type": "string",
+                  "enum": ["all", "sender"],
+                  "description": "账户级默认回复对象,覆盖全局 replyTo"
+                },
+                "transport": {
+                  "type": "string",
+                  "enum": ["imap", "ws"],
+                  "description": "传输方式：imap=标准IMAP/SMTP（默认），ws=WebSocket通过@clawemail/node-sdk"
+                },
+                "apiKey": {
+                  "type": "string",
+                  "description": "SDK传输方式的API密钥（格式：ck_live_xxx）"
+                },
+                "token": {
+                  "type": "string",
+                  "description": "可选：IM认证token（SDK传输使用，未配置时自动获取）"
+                },
+                "a2a": {
+                  "type": "object",
+                  "description": "Agent-to-Agent (A2A) 配置",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean",
+                      "default": true,
+                      "description": "是否启用 A2A 模式"
+                    },
+                    "agentDomains": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "description": "允许的 Agent 域名列表"
+                    },
+                    "maxPingPongTurns": {
+                      "type": "number",
+                      "description": "A2A 最大往返轮数"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "a2a": {
+            "type": "object",
+            "description": "Agent-to-Agent 协作配置",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": true,
+                "description": "是否接受其他 AI Agent 发来的邮件（默认开启）。关闭后仅处理人类发件人的邮件"
+              },
+              "agentDomains": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "被视为 Agent 的邮件域名列表（如 [\"agents.example.com\"]）"
+              },
+              "maxPingPongTurns": {
+                "type": "number",
+                "default": 20,
+                "description": "Agent 间来回邮件的最大轮次（默认 20，最大 20）"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

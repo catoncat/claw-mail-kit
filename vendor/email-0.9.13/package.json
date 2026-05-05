@@ -1,0 +1,64 @@
+{
+  "name": "@clawemail/email",
+  "version": "0.9.13",
+  "private": false,
+  "description": "OpenClaw email channel with IMAP IDLE and SMTP, now with configurable reply modes",
+  "type": "module",
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "channel": {
+      "id": "email",
+      "label": "Email",
+      "selectionLabel": "Email",
+      "docsPath": "/channels/email",
+      "docsLabel": "Email",
+      "blurb": "Email channel using IMAP IDLE and SMTP",
+      "order": 80
+    },
+    "install": {
+      "npmSpec": "@clawemail/email",
+      "defaultChoice": "npm",
+      "minHostVersion": ">=2026.3.22"
+    }
+  },
+  "files": [
+    "dist/",
+    "skills/",
+    "openclaw.plugin.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "lint": "eslint src",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clawemail/node-sdk": "^0.2.3",
+    "ajv": "^8.18.0",
+    "crypto-js": "^4.2.0",
+    "imap": "^0.8.19",
+    "mailparser": "^3.6.9",
+    "marked": "^18.0.0",
+    "minimatch": "^10.0.1",
+    "nodemailer": "^6.9.15",
+    "turndown": "^7.2.0",
+    "tweetnacl": "^1.0.3",
+    "ws": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/imap": "^0.8.40",
+    "@types/nodemailer": "^6.4.17",
+    "@types/turndown": "^5.0.5",
+    "@types/ws": "^8.18.1",
+    "eslint": "^9.18.0",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.3.22"
+  }
+}

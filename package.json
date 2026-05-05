@@ -1,0 +1,35 @@
+{
+  "name": "local-claw-mail",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local CLI for Claw 163 agent mail without OpenClaw",
+  "bin": {
+    "clawmail-local": "src/clawmail.mjs"
+  },
+  "scripts": {
+    "clawmail": "node src/clawmail.mjs",
+    "check": "node --check src/clawmail.mjs && node --check src/web.mjs && node src/clawmail.mjs check",
+    "web": "node src/web.mjs",
+    "cf:types": "wrangler types worker/src/worker-configuration.d.ts",
+    "cf:typecheck": "npm run cf:types && tsc -p worker/tsconfig.json --noEmit",
+    "cf:migrate:local": "wrangler d1 migrations apply claw_mail --local",
+    "cf:dev": "wrangler dev",
+    "cf:deploy:dry-run": "wrangler deploy --dry-run"
+  },
+  "dependencies": {
+    "@clawemail/mail-cli": "^0.2.4",
+    "@clawemail/node-sdk": "^0.2.4",
+    "tweetnacl": "^1.0.3",
+    "ws": "^8.20.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260505.1",
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.87.0"
+  }
+}

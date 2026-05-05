@@ -1,0 +1,6 @@
+# Copy to .dev.vars for wrangler dev only; do not deploy DEV_BYPASS_AUTH=true.
+DEV_BYPASS_AUTH=true
+APP_ENCRYPTION_KEY=replace-with-32-byte-random-local-dev-key
+# Production Access JWT verification requires both values below.
+# ACCESS_TEAM_DOMAIN=your-team.cloudflareaccess.com
+# ACCESS_AUD=your-access-application-aud

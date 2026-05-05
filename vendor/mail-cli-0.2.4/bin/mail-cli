@@ -1,0 +1,65 @@
+#!/usr/bin/env node
+"use strict";
+
+// Thin wrapper shipped by the main @clawemail/mail-cli package.
+// Resolves the platform binary from one of two sources:
+//   1. CDN mode: binary downloaded by postinstall into this package's bin/ dir
+//   2. npm mode: platform-specific optional dependency package
+// Then spawns it, forwarding all arguments, stdio, and exit code.
+
+const { execFileSync } = require("child_process");
+const { join, dirname } = require("path");
+const { existsSync } = require("fs");
+const os = require("os");
+
+const key = `${os.platform()}-${os.arch()}`;
+const cdnExe = os.platform() === "win32" ? "mail-cli-binary.exe" : "mail-cli-binary";
+const exe = os.platform() === "win32" ? "mail-cli.exe" : "mail-cli";
+
+// Source 1: CDN mode — binary downloaded by postinstall sits next to this wrapper
+const cdnBinPath = join(__dirname, cdnExe);
+
+let binPath;
+
+if (existsSync(cdnBinPath)) {
+  binPath = cdnBinPath;
+} else {
+  // Source 2: npm optionalDependencies mode
+  const PLATFORM_PACKAGES = {
+    "darwin-arm64":  "@clawemail/mail-cli-darwin-arm64",
+    "darwin-x64":    "@clawemail/mail-cli-darwin-x64",
+    "linux-x64":     "@clawemail/mail-cli-linux-x64",
+    "linux-arm64":   "@clawemail/mail-cli-linux-arm64",
+    "win32-x64":     "@clawemail/mail-cli-win32-x64",
+  };
+
+  const pkg = PLATFORM_PACKAGES[key];
+
+  if (!pkg) {
+    console.error(
+      `mail-cli: unsupported platform ${key}. ` +
+      `Supported: ${Object.keys(PLATFORM_PACKAGES).join(", ")}`
+    );
+    process.exit(1);
+  }
+
+  try {
+    const pkgDir = require.resolve(`${pkg}/package.json`);
+    binPath = join(dirname(pkgDir), "bin", exe);
+  } catch {
+    console.error(
+      `mail-cli: platform binary not found for ${key}.\n` +
+      `Run "npm install -g @clawemail/mail-cli" to reinstall.`
+    );
+    process.exit(1);
+  }
+}
+
+try {
+  execFileSync(binPath, process.argv.slice(2), { stdio: "inherit" });
+} catch (err) {
+  if (err.status !== null) {
+    process.exit(err.status);
+  }
+  throw err;
+}
