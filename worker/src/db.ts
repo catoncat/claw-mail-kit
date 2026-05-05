@@ -11,6 +11,11 @@ function jsonText(value: unknown): string | null {
   return JSON.stringify(value);
 }
 
+function nonBlankText(value: string | null | undefined): string | null {
+  if (!value || !value.trim()) return null;
+  return value;
+}
+
 function parseJson<T>(value: string | null, fallback: T): T {
   if (!value) return fallback;
   try { return JSON.parse(value) as T; } catch { return fallback; }
@@ -258,6 +263,8 @@ export async function upsertMessage(db: D1Database, mailboxEmail: string, folder
 }
 
 export async function cacheMessageBody(db: D1Database, mailboxEmail: string, providerId: string, mail: MessageDetail): Promise<void> {
+  const cachedText = nonBlankText(mail.text?.content);
+  const cachedHtml = nonBlankText(mail.html?.content);
   await db.prepare(`
     UPDATE messages SET
       subject = COALESCE(?, subject),
@@ -276,10 +283,10 @@ export async function cacheMessageBody(db: D1Database, mailboxEmail: string, pro
     jsonText(mail.from),
     jsonText(mail.to),
     jsonText(mail.cc),
-    mail.text?.content || null,
-    mail.html?.content || null,
+    cachedText,
+    cachedHtml,
     mail.attachments?.length ? 1 : 0,
-    plainPreview(mail),
+    plainFromCached(cachedText, cachedHtml),
     JSON.stringify(mail),
     nowIso(),
     mailboxEmail.toLowerCase(),
@@ -400,10 +407,22 @@ export async function getCachedMessage(db: D1Database, mailboxEmail: string, pro
   const row = await db.prepare('SELECT raw_json, cached_text, cached_html, subject, from_json, to_json, cc_json, date FROM messages WHERE mailbox_email = ? AND provider_id = ?')
     .bind(mailboxEmail.toLowerCase(), providerId)
     .first<MessageRow>();
-  if (!row) return null;
-  const raw = parseJson<MessageDetail | null>(row.raw_json, null);
-  if (raw && (row.cached_html || row.cached_text)) return raw;
-  return null;
+  const cachedText = nonBlankText(row?.cached_text);
+  const cachedHtml = nonBlankText(row?.cached_html);
+  if (!row || (!cachedHtml && !cachedText)) return null;
+
+  const raw = parseJson<MessageDetail | null>(row.raw_json, null) || { id: providerId };
+  return {
+    ...raw,
+    id: raw.id || providerId,
+    subject: raw.subject ?? row.subject,
+    from: raw.from ?? parseJson(row.from_json, undefined),
+    to: raw.to ?? parseJson(row.to_json, undefined),
+    cc: raw.cc ?? parseJson(row.cc_json, undefined),
+    date: raw.date ?? row.date,
+    text: cachedText ? { ...(raw.text || {}), contentType: raw.text?.contentType || 'text/plain', content: cachedText } : raw.text,
+    html: cachedHtml ? { ...(raw.html || {}), contentType: raw.html?.contentType || 'text/html', content: cachedHtml } : raw.html,
+  };
 }
 
 function plainFromCached(text?: string | null, html?: string | null): string {

@@ -100,8 +100,45 @@ async function searchMessages(q){
 }
 function renderMessages(){ els.listMeta.textContent=`${state.messages.length} 封 · ${state.aggregate?'聚合':'单邮箱'} · ${visibleFolderName(state.fid)}`; els.messageList.innerHTML=''; if(!state.messages.length){els.messageList.innerHTML='<div class="empty-state"><p>暂无索引邮件，点刷新拉取。</p></div>'; return;} for(const msg of state.messages){ const btn=document.createElement('button'); btn.className=`message-item ${state.selected?.id===msg.id && state.selected?.user===msg.user?'active':''}`; btn.innerHTML=`<div class="message-head"><span class="subject">${escapeHtml(msg.subject||'(无主题)')}</span><span class="date">${fmtDate(msg.date)}</span></div><div class="from">${escapeHtml(asText(msg.from))}</div><div class="preview">${escapeHtml(msg.preview||'')}</div>${msg.user?`<span class="chip">${escapeHtml(msg.accountName||msg.user)}</span>`:''}`; btn.onclick=()=>openMessage(msg); els.messageList.append(btn); }}
 function showEmpty(){ state.selected=null; els.emptyReader.classList.remove('hidden'); els.reader.classList.add('hidden'); }
-async function openMessage(msg){ state.selected=msg; const user=msg.user||state.user; const data=await api(`/api/message?id=${encodeURIComponent(msg.id)}&user=${encodeURIComponent(user)}`); renderMessage(data.mail,user); renderMessages(); }
-function renderMessage(mail,user){ els.emptyReader.classList.add('hidden'); els.reader.classList.remove('hidden'); els.readDate.textContent=fmtDate(mail.date||mail.sentDate||mail.receivedDate); els.readSubject.textContent=mail.subject||'(无主题)'; els.readFrom.textContent=`From: ${asText(mail.from)} · ${user}`; els.readRecipients.textContent=`To: ${asText(mail.to)}${mail.cc?' · Cc: '+asText(mail.cc):''}`; const html=mail.html?.content || `<pre>${escapeHtml(mail.text?.content||'')}</pre>`; els.mailFrame.srcdoc=`<!doctype html><meta charset="utf-8"><base target="_blank"><style>body{font:15px/1.65 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;padding:22px;background:#fffdf6;color:#111}img{max-width:100%;height:auto}pre{white-space:pre-wrap}</style>${html}`; els.attachments.innerHTML=(mail.attachments||[]).map(a=>`<div class="chip">📎 ${escapeHtml(a.filename||a.id)}</div>`).join(''); }
+async function openMessage(msg){
+  state.selected=msg;
+  const user=msg.user||state.user;
+  renderLoadingMessage(msg,user);
+  renderMessages();
+  try{
+    const data=await api(`/api/message?id=${encodeURIComponent(msg.id)}&user=${encodeURIComponent(user)}`);
+    renderMessage(data.mail,user);
+  }catch(e){
+    renderMessageError(msg,user,e);
+    toast(e.message);
+  }
+}
+function partContent(part){
+  if(typeof part === 'string') return part.trim();
+  if(part && typeof part === 'object' && typeof part.content === 'string') return part.content.trim();
+  return '';
+}
+function mailShell(body){
+  return `<!doctype html><html><head><meta charset="utf-8"><base target="_blank"><style>
+    :root{color-scheme:light;--mail-bg:#fffdf8;--mail-text:#1f1b16;--mail-muted:#746b5f;--mail-line:rgba(31,27,22,.14)}
+    html{height:100%;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    body{box-sizing:border-box;min-height:100%;margin:0;padding:20px 22px;background:var(--mail-bg);color:var(--mail-text);font:14px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-wrap:pretty}
+    img{max-width:100%;height:auto;outline:1px solid rgba(0,0,0,.1);border-radius:8px}
+    a{color:#664f00;text-decoration-thickness:1px;text-underline-offset:3px}
+    pre{white-space:pre-wrap;margin:0;font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace}
+    blockquote{margin:12px 0;padding:8px 12px;border-left:3px solid var(--mail-line);color:var(--mail-muted);background:rgba(31,27,22,.035)}
+    .empty-mail{display:grid;place-items:center;min-height:220px;color:var(--mail-muted);border:1px dashed var(--mail-line);border-radius:12px;text-align:center;padding:16px}
+  </style></head><body>${body}</body></html>`;
+}
+function mailDocument(mail){
+  const html = partContent(mail.html);
+  const text = partContent(mail.text);
+  const body = html || (text ? `<pre>${escapeHtml(text)}</pre>` : '<div class="empty-mail">这封邮件没有返回正文。可以点“刷新”后再打开一次。</div>');
+  return mailShell(body);
+}
+function renderLoadingMessage(mail,user){ els.emptyReader.classList.add('hidden'); els.reader.classList.remove('hidden'); els.readDate.textContent=fmtDate(mail.date||mail.sentDate||mail.receivedDate); els.readSubject.textContent=mail.subject||'(无主题)'; els.readFrom.textContent=`From: ${asText(mail.from)} · ${user}`; els.readRecipients.textContent=''; els.attachments.innerHTML=''; els.mailFrame.srcdoc=mailShell('<div class="empty-mail">正在加载正文…</div>'); }
+function renderMessageError(mail,user,error){ renderLoadingMessage(mail,user); els.mailFrame.srcdoc=mailShell(`<div class="empty-mail">正文加载失败：${escapeHtml(error.message)}</div>`); }
+function renderMessage(mail,user){ els.emptyReader.classList.add('hidden'); els.reader.classList.remove('hidden'); els.readDate.textContent=fmtDate(mail.date||mail.sentDate||mail.receivedDate); els.readSubject.textContent=mail.subject||'(无主题)'; els.readFrom.textContent=`From: ${asText(mail.from)} · ${user}`; els.readRecipients.textContent=`To: ${asText(mail.to)}${mail.cc?' · Cc: '+asText(mail.cc):''}`; els.mailFrame.srcdoc=mailDocument(mail); els.attachments.innerHTML=(mail.attachments||[]).map(a=>`<div class="chip">📎 ${escapeHtml(a.filename||a.id)}</div>`).join(''); }
 async function refreshCurrent(){ els.refreshBtn.disabled=true; els.listMeta.textContent='刷新远端并更新 D1…'; try{ const folders=state.fid; const data=await api(`/api/claw/refresh?folders=${encodeURIComponent(folders)}`,{method:'POST'}); await Promise.all([loadFolders(), state.mode==='search'&&els.searchInput.value.trim()?searchMessages(els.searchInput.value.trim()):loadMessages()]); toast(`刷新完成：${data.refresh.messages} 条，错误 ${data.refresh.errors.length}`); }catch(e){ toast(e.message); }finally{ els.refreshBtn.disabled=false; }}
 function openComposer(reply=false){ state.replyId=reply?state.selected?.id:null; state.replyUser=reply?(state.selected?.user||state.user):null; els.composerTitle.textContent=reply?'回复邮件':'写邮件'; els.composerHint.textContent=reply?`回复 ${state.replyUser}`:`从 ${state.user||state.defaultUser||'当前邮箱'} 发送`; els.composeTo.value=''; els.composeCc.value=''; els.composeSubject.value=reply?`Re: ${state.selected?.subject||''}`:''; els.composeBody.value=''; els.composeStatus.textContent=''; els.composerDialog.showModal(); }
 async function sendCurrent(){ els.sendBtn.disabled=true; els.composeStatus.textContent='发送中…'; try{ const body={user:state.replyUser||state.user||state.defaultUser,to:els.composeTo.value,cc:els.composeCc.value,subject:els.composeSubject.value,body:els.composeBody.value,html:els.composeHtml.checked}; const path=state.replyId?'/api/reply':'/api/send'; if(state.replyId) body.id=state.replyId; const data=await api(path,{method:'POST',body:JSON.stringify(body)}); els.composeStatus.textContent='已发送'; toast(`已发送：${data.from}`); setTimeout(()=>els.composerDialog.close(),600); }catch(e){ els.composeStatus.textContent=e.message; }finally{ els.sendBtn.disabled=false; }}
