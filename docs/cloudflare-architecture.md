@@ -65,3 +65,13 @@ wrangler d1 migrations apply claw_mail --remote
 - `POST /api/reply`
 
 `/api/messages` 和 `/api/search` 读 D1 索引；`/api/message` 按需读正文并缓存；`POST /api/claw/refresh` 与 Cron 使用同一刷新服务。
+
+## 当前部署状态
+
+- Worker：`claw-mail-cloudflare`
+- Custom domain：`https://claw.chen.rs/`
+- D1：`claw_mail` (`5f95a29f-082b-47c6-9fd1-3099511d4c15`)
+- Cron：`*/5 * * * *`
+- Cloudflare Access：应用 `Claw Mail` 保护 `claw.chen.rs`；允许 `1x02790@gmail.com` 与 `crs0910@icloud.com`。
+
+验证：未登录访问 `/` 和 `/api/me` 会跳转到 `whynotok.cloudflareaccess.com` 的 Access 登录页；这说明请求先经过 Access，再到 Worker。
