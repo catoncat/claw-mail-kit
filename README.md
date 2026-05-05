@@ -9,6 +9,19 @@ It supports:
 - creating and managing Claw agent sub-mailboxes;
 - an optional private Cloudflare Worker deployment protected by Cloudflare Access, with D1-backed mailbox indexing.
 
+
+## Screenshots
+
+Cloudflare Access protects the hosted Worker UI before users reach the mailbox app. The product screenshots below use example `@claw.163.com` mailbox identities and sample message content.
+
+![Cloudflare Access login](docs/images/access-login.png)
+
+![Inbox reading view](docs/images/inbox-reading.png)
+
+![Compose and send mail](docs/images/compose-send.png)
+
+![Mailbox management](docs/images/mailbox-management.png)
+
 ## Requirements
 
 - Node.js 18+

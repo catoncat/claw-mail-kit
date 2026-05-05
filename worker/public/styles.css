@@ -622,7 +622,9 @@ h2 {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.attachment-chip { gap: 6px; }
+.attachment-chip { gap: 6px; text-decoration: none; }
+.attachment-chip small { color: var(--slock-muted); font: 900 10px/1 var(--font-mono); }
+.attachment-chip:hover { background: var(--slock-yellow-soft); }
 .file-glyph {
   border-right: var(--slock-border);
   margin-left: -8px;
@@ -706,7 +708,8 @@ h2 {
   min-height: var(--hit);
   padding: 0 10px;
 }
-.reader-actions .primary { width: 58px; }
+.reader-actions .primary,
+.reader-actions .danger { width: 58px; }
 .recipient-line {
   flex: 0 0 auto;
   margin-top: 8px;

@@ -12,6 +12,7 @@ import {
   listMailboxes,
   listMessages,
   mailboxPublic,
+  moveMessageToFolder,
   requireClawSettings,
   searchMessages,
   setMailboxAggregate,
@@ -31,6 +32,12 @@ function host(env: Env): string {
 function timeoutMs(env: Env): number {
   const n = Number(env.CLAW_TIMEOUT_MS || 15000);
   return Number.isFinite(n) && n > 0 ? n : 15000;
+}
+
+
+function contentDisposition(filename: string): string {
+  const fallback = filename.replace(/[^\x20-\x7E]+/g, '_').replace(/["\\]/g, '_') || 'attachment';
+  return `attachment; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
 }
 
 async function routeApi(app: AppContext, url: URL): Promise<Response> {
@@ -53,6 +60,8 @@ async function routeApi(app: AppContext, url: URL): Promise<Response> {
   if (request.method === 'GET' && url.pathname === '/api/messages') return handleMessages(app, url);
   if (request.method === 'GET' && url.pathname === '/api/search') return handleSearch(app, url);
   if (request.method === 'GET' && url.pathname === '/api/message') return handleMessage(app, url);
+  if (request.method === 'DELETE' && url.pathname === '/api/message') return handleDeleteMessage(app, url);
+  if (request.method === 'GET' && url.pathname === '/api/attachment') return handleAttachment(app, url);
   if (request.method === 'POST' && url.pathname === '/api/mark') return handleMark(app, url);
   if (request.method === 'POST' && url.pathname === '/api/send') return handleSend(app, url);
   if (request.method === 'POST' && url.pathname === '/api/reply') return handleReply(app, url);
@@ -251,6 +260,39 @@ async function handleMessage({ env }: AppContext, url: URL): Promise<Response> {
   await cacheMessageBody(env.DB, mailbox.email, id, mail);
   if (markRead) await env.DB.prepare('UPDATE messages SET read = 1, updated_at = ? WHERE mailbox_email = ? AND provider_id = ?').bind(new Date().toISOString(), mailbox.email, id).run();
   return json({ ok: true, user: mailbox.email, mail });
+}
+
+async function handleDeleteMessage({ env, ctx }: AppContext, url: URL): Promise<Response> {
+  const id = url.searchParams.get('id');
+  if (!id) throw new HttpError(400, 'missing id');
+  const mailbox = await resolveMailbox(env, url);
+  const settings = await requireClawSettings(env);
+  const client = new ClawCoremailClient(coremailConfig(env, settings, mailbox.email));
+  await client.moveToTrash([id]);
+  await moveMessageToFolder(env.DB, mailbox.email, id, '4');
+  ctx.waitUntil(Promise.all([
+    refreshMailboxFolder(env, settings, mailbox, '1').catch(() => undefined),
+    refreshMailboxFolder(env, settings, mailbox, '4').catch(() => undefined),
+  ]));
+  return json({ ok: true, user: mailbox.email, id, folder: '4' });
+}
+
+async function handleAttachment({ env }: AppContext, url: URL): Promise<Response> {
+  const id = url.searchParams.get('id');
+  const partId = url.searchParams.get('part') || url.searchParams.get('partId');
+  if (!id) throw new HttpError(400, 'missing id');
+  if (!partId) throw new HttpError(400, 'missing part');
+  const mailbox = await resolveMailbox(env, url);
+  const settings = await requireClawSettings(env);
+  const client = new ClawCoremailClient(coremailConfig(env, settings, mailbox.email));
+  const attachment = await client.attachment({ id, partId });
+  const headers = new Headers({
+    'content-type': attachment.contentType,
+    'content-disposition': contentDisposition(attachment.filename),
+    'cache-control': 'private, no-store',
+  });
+  if (attachment.size !== undefined) headers.set('content-length', String(attachment.size));
+  return new Response(attachment.body, { headers });
 }
 
 async function handleMark({ env, request }: AppContext, url: URL): Promise<Response> {

@@ -12,6 +12,13 @@ const FOLDER_ALIASES: Record<string, number> = {
 type CoremailEnvelope<T> = { code?: string; message?: string; var?: T; [key: string]: unknown };
 type TokenEnvelope = { success?: boolean; result?: { accessToken?: string; expiresIn?: number }; message?: string };
 
+export type AttachmentFetch = {
+  body: ReadableStream | null;
+  contentType: string;
+  filename: string;
+  size?: number;
+};
+
 function buildUrl(host: string, path: string): string {
   return new URL(path, host.endsWith('/') ? host : `${host}/`).toString();
 }
@@ -42,6 +49,28 @@ async function postJson<T>(url: string, payload: unknown, bearer: string, timeou
     try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
     if (!response.ok) throw new HttpError(502, `Claw HTTP ${response.status}: ${JSON.stringify(data).slice(0, 300)}`);
     return data as T;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+
+function attachmentFilename(response: Response, partId: string): string {
+  const disposition = response.headers.get('content-disposition') || '';
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;\n]+)/i);
+  const plainMatch = disposition.match(/filename=["']?([^"';\n]+)/i);
+  const raw = utf8Match?.[1] || plainMatch?.[1];
+  if (!raw) return `attachment_${partId}`;
+  try { return decodeURIComponent(raw); } catch { return raw; }
+}
+
+async function streamResponse(url: string, bearer: string, timeoutMs = 15000): Promise<Response> {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { headers: { authorization: `Bearer ${bearer}` }, signal: ac.signal });
+    if (!response.ok) throw new HttpError(502, `Claw stream HTTP ${response.status}`);
+    return response;
   } finally {
     clearTimeout(timer);
   }
@@ -139,6 +168,33 @@ export class ClawCoremailClient {
 
   async mark(input: { ids: string[]; read: boolean }): Promise<void> {
     await this.proxy('mbox:updateMessageInfos', { ids: input.ids, attrs: { flags: { read: input.read } } });
+  }
+
+  async moveToFolder(input: { ids: string[]; fid: string | number }): Promise<void> {
+    await this.proxy('mbox:updateMessageInfos', { ids: input.ids, attrs: { fid: folderId(input.fid) } });
+  }
+
+  async moveToTrash(ids: string[]): Promise<void> {
+    await this.moveToFolder({ ids, fid: 'Trash' });
+  }
+
+  async attachment(input: { id: string; partId: string }): Promise<AttachmentFetch> {
+    const token = await this.accessToken();
+    const url = new URL(buildUrl(this.cfg.host, '/claw-api-gateway/api/coremail/proxy'));
+    url.searchParams.set('uid', this.cfg.user);
+    url.searchParams.set('func', 'mbox:getMessageData');
+    url.searchParams.set('mid', input.id);
+    url.searchParams.set('part', input.partId);
+    url.searchParams.set('mode', 'download');
+    const response = await streamResponse(url.toString(), token, this.cfg.timeoutMs);
+    const sizeText = response.headers.get('content-length');
+    const size = sizeText && Number.isFinite(Number(sizeText)) ? Number(sizeText) : undefined;
+    return {
+      body: response.body,
+      contentType: response.headers.get('content-type') || 'application/octet-stream',
+      filename: attachmentFilename(response, input.partId),
+      size,
+    };
   }
 
   async send(input: { to: string[]; subject?: string; body?: string; html?: boolean; cc?: string[]; bcc?: string[] }): Promise<{ status: 'sent' }> {

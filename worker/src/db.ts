@@ -294,6 +294,37 @@ export async function cacheMessageBody(db: D1Database, mailboxEmail: string, pro
   ).run();
 }
 
+
+export async function moveMessageToFolder(db: D1Database, mailboxEmail: string, providerId: string, folderId: string): Promise<void> {
+  await db.prepare(`
+    UPDATE messages
+    SET folder_id = ?, updated_at = ?
+    WHERE mailbox_email = ? AND provider_id = ?
+  `).bind(folderId, nowIso(), mailboxEmail.toLowerCase(), providerId).run();
+}
+
+export async function pruneMessagesMissingFromFolderWindow(
+  db: D1Database,
+  mailboxEmail: string,
+  folderId: string,
+  remoteProviderIds: string[],
+  windowOldestDate?: string | null,
+): Promise<number> {
+  const uniqueIds = [...new Set(remoteProviderIds.filter(Boolean))];
+  const params: Array<string | number> = [mailboxEmail.toLowerCase(), folderId];
+  const conditions = ['mailbox_email = ?', 'folder_id = ?'];
+  if (uniqueIds.length) {
+    conditions.push(`provider_id NOT IN (${uniqueIds.map(() => '?').join(', ')})`);
+    params.push(...uniqueIds);
+  }
+  if (windowOldestDate) {
+    conditions.push('(date IS NULL OR datetime(date) >= datetime(?))');
+    params.push(windowOldestDate);
+  }
+  const result = await db.prepare(`DELETE FROM messages WHERE ${conditions.join(' AND ')}`).bind(...params).run();
+  return result.meta?.changes ?? 0;
+}
+
 export async function setRefreshState(db: D1Database, mailboxEmail: string, folderId: string, input: { ok: boolean; error?: string; newestMessageDate?: string | null }): Promise<void> {
   await db.prepare(`
     INSERT INTO refresh_state(mailbox_email, folder_id, last_success_at, last_error_at, last_error, newest_message_date, updated_at)

@@ -94,12 +94,12 @@ Web UI 只把 `CLAW_USER` 暴露给浏览器；`CLAW_API_KEY` 保留在本地 No
 ```bash
 node src/clawmail.mjs accounts master-user --json
 node src/clawmail.mjs accounts list --json
-node src/clawmail.mjs accounts info --uid runshan.hi@claw.163.com --json
+node src/clawmail.mjs accounts info --uid agent-demo@claw.163.com --json
 node src/clawmail.mjs accounts create --prefix bot1 --display-name "Bot 1" --type sub --json
-node src/clawmail.mjs accounts profile --uid runshan.bot1@claw.163.com --display-name "New Name" --json
-node src/clawmail.mjs accounts enable --uid runshan.bot1@claw.163.com --json
-node src/clawmail.mjs accounts disable --uid runshan.bot1@claw.163.com --json
-node src/clawmail.mjs accounts delete --uid runshan.bot1@claw.163.com --json
+node src/clawmail.mjs accounts profile --uid release-bot@claw.163.com --display-name "New Name" --json
+node src/clawmail.mjs accounts enable --uid release-bot@claw.163.com --json
+node src/clawmail.mjs accounts disable --uid release-bot@claw.163.com --json
+node src/clawmail.mjs accounts delete --uid release-bot@claw.163.com --json
 ```
 
 注意：`accounts create` 会返回一次性 auth code。本地 CLI/Web 都会把原始创建结果另存到 `.secrets/submailbox-create-*.json`，但它仍只应按一次性凭证处理。

@@ -5,6 +5,7 @@ import {
   getClawSettings,
   listMailboxes,
   markMissingMailboxesDeleted,
+  pruneMessagesMissingFromFolderWindow,
   requireClawSettings,
   saveClawSettings,
   setRefreshState,
@@ -65,9 +66,18 @@ export async function resyncDashboard(env: Env): Promise<{ syncedMailboxes: numb
 export async function refreshMailboxFolder(env: Env, settings: ClawAuthSettings, mailbox: MailboxRow, folderId: string): Promise<number> {
   const client = new ClawCoremailClient(coremailConfig(env, settings, mailbox.email));
   try {
-    const messages = await client.list({ fid: folderId, limit: refreshLimit(env) });
+    const limit = refreshLimit(env);
+    const messages = await client.list({ fid: folderId, limit });
     await Promise.all(messages.map((message: MessageSummary) => upsertMessage(env.DB, mailbox.email, folderId, message)));
     const newest = messages[0]?.date || null;
+    const oldestInWindow = messages.length >= limit ? messages.at(-1)?.date || null : null;
+    await pruneMessagesMissingFromFolderWindow(
+      env.DB,
+      mailbox.email,
+      folderId,
+      messages.map((message) => message.id).filter(Boolean),
+      oldestInWindow,
+    );
     await setRefreshState(env.DB, mailbox.email, folderId, { ok: true, newestMessageDate: newest });
     return messages.length;
   } catch (error) {
