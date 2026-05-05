@@ -66,12 +66,14 @@ wrangler d1 migrations apply claw_mail --remote
 
 `/api/messages` 和 `/api/search` 读 D1 索引；`/api/message` 按需读正文并缓存；`POST /api/claw/refresh` 与 Cron 使用同一刷新服务。
 
-## 当前部署状态
+## 部署检查清单
 
-- Worker：`claw-mail-cloudflare`
-- Custom domain：`https://claw.chen.rs/`
-- D1：`claw_mail` (`5f95a29f-082b-47c6-9fd1-3099511d4c15`)
-- Cron：`*/5 * * * *`，默认索引收件箱/已发送/已删除
-- Cloudflare Access：应用 `Claw Mail` 保护 `claw.chen.rs`；允许 `1x02790@gmail.com` 与 `crs0910@icloud.com`。
+发布到自己的 Cloudflare 账号前，按顺序配置：
 
-验证：未登录访问 `/` 和 `/api/me` 会跳转到 `whynotok.cloudflareaccess.com` 的 Access 登录页；这说明请求先经过 Access，再到 Worker。
+- Worker name：按需修改 `wrangler.jsonc` 里的 `name`。
+- Route / custom domain：把 `wrangler.jsonc` 里的示例域名替换为自己的域名；不使用自定义域名时可删除 `routes`。
+- D1：运行 `wrangler d1 create claw_mail`，把返回的 `database_id` 写入 `wrangler.jsonc`。
+- Cron：默认 `*/5 * * * *`，按需调整刷新频率。
+- Cloudflare Access：生产环境必须配置 Access 应用，并通过 `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` secret 开启 JWT 校验。
+
+验证：未登录访问 `/` 和 `/api/me` 应先进入 Cloudflare Access 登录；登录后 `/api/me` 返回当前 Access 用户与 Claw 连接状态。

@@ -1,9 +1,9 @@
 {
-  "name": "local-claw-mail",
+  "name": "claw-mail-kit",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Local CLI for Claw 163 agent mail without OpenClaw",
+  "description": "CLI, local web UI, and Cloudflare Worker kit for Claw 163 agent mail",
   "bin": {
     "clawmail-local": "src/clawmail.mjs"
   },

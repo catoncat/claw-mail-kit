@@ -5,7 +5,7 @@
   "compatibility_date": "2026-05-05",
   "compatibility_flags": ["nodejs_compat"],
   "routes": [
-    { "pattern": "claw.chen.rs", "custom_domain": true }
+    { "pattern": "mail.example.com", "custom_domain": true }
   ],
   "assets": {
     "directory": "./worker/public",
@@ -17,7 +17,7 @@
     {
       "binding": "DB",
       "database_name": "claw_mail",
-      "database_id": "5f95a29f-082b-47c6-9fd1-3099511d4c15",
+      "database_id": "replace-with-your-d1-database-id",
       "migrations_dir": "worker/migrations"
     }
   ],
