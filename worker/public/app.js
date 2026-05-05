@@ -1,4 +1,10 @@
 const DEFAULT_FID = '1';
+const VISIBLE_FOLDERS = [
+  { id: '1', name: '收件箱' },
+  { id: '3', name: '已发送' },
+  { id: '4', name: '已删除' },
+];
+const VISIBLE_FOLDER_IDS = new Set(VISIBLE_FOLDERS.map((f) => f.id));
 const state = { connected:false, aggregate:true, user:null, defaultUser:null, fid:DEFAULT_FID, title:'收件箱', mode:'folder', messages:[], selected:null, replyId:null, replyUser:null };
 const $ = (id) => document.getElementById(id);
 const els = {
@@ -21,6 +27,15 @@ function asText(value){ if(Array.isArray(value)) return value.join(', '); if(val
 function scoped(path, params={}){ const q=new URLSearchParams(params); if(state.aggregate) q.set('aggregate','1'); else if(state.user) q.set('user',state.user); return `${path}?${q}`; }
 function currentScope(){ return state.aggregate ? '全部邮箱' : (state.user || '当前邮箱'); }
 function currentTitle(){ return `${currentScope()} · ${state.title}`; }
+function visibleFolderName(id){ return VISIBLE_FOLDERS.find((f) => f.id === String(id))?.name || '收件箱'; }
+function visibleFolders(remoteFolders){
+  const byId = new Map((remoteFolders || []).map((folder) => [String(folder.id), folder]));
+  return VISIBLE_FOLDERS.map((folder) => ({
+    ...folder,
+    unreadCount: byId.get(folder.id)?.unreadCount || 0,
+    messageCount: byId.get(folder.id)?.messageCount || 0,
+  }));
+}
 function setSetupStatus(value){ els.setupStatus.textContent = typeof value === 'string' ? value : JSON.stringify(value,null,2); }
 
 async function bootstrap(){
@@ -64,7 +79,14 @@ async function createMailbox(){ const suffix=prompt('子邮箱后缀 suffix（�
 async function loadFolders(){
   els.folders.innerHTML='';
   const data=await api(state.aggregate?'/api/folders?aggregate=1':`/api/folders?user=${encodeURIComponent(state.user||state.defaultUser)}`);
-  for(const f of data.folders){ const btn=document.createElement('button'); btn.className=`folder ${String(f.id)===String(state.fid)?'active':''}`; btn.innerHTML=`<span>${escapeHtml(f.name)}</span>${f.unreadCount?`<strong>${f.unreadCount}</strong>`:''}`; btn.onclick=async()=>{state.fid=String(f.id); state.title=f.name; state.mode='folder'; els.searchInput.value=''; showEmpty(); await Promise.all([loadFolders(),loadMessages()]);}; els.folders.append(btn); }
+  if(!VISIBLE_FOLDER_IDS.has(String(state.fid))){ state.fid = DEFAULT_FID; state.title = visibleFolderName(DEFAULT_FID); }
+  for(const f of visibleFolders(data.folders)){
+    const btn=document.createElement('button');
+    btn.className=`folder ${String(f.id)===String(state.fid)?'active':''}`;
+    btn.innerHTML=`<span>${escapeHtml(f.name)}</span>${f.unreadCount?`<strong>${f.unreadCount}</strong>`:''}`;
+    btn.onclick=async()=>{state.fid=String(f.id); state.title=f.name; state.mode='folder'; els.searchInput.value=''; showEmpty(); await Promise.all([loadFolders(),loadMessages()]);};
+    els.folders.append(btn);
+  }
 }
 async function loadMessages(){
   state.mode='folder'; els.listTitle.textContent=currentTitle(); els.listMeta.textContent='从 D1 索引读取…'; els.messageList.innerHTML='';
@@ -76,7 +98,7 @@ async function searchMessages(q){
   const params={fid:state.fid,limit:'60',keyword:q}; if(els.unreadOnly.checked) params.unread='1';
   const data=await api(scoped('/api/search',params)); state.messages=data.messages||[]; renderMessages();
 }
-function renderMessages(){ els.listMeta.textContent=`${state.messages.length} 封 · ${state.aggregate?'聚合':'单邮箱'} · folder=${state.fid}`; els.messageList.innerHTML=''; if(!state.messages.length){els.messageList.innerHTML='<div class="empty-state"><p>暂无索引邮件，点刷新拉取。</p></div>'; return;} for(const msg of state.messages){ const btn=document.createElement('button'); btn.className=`message-item ${state.selected?.id===msg.id && state.selected?.user===msg.user?'active':''}`; btn.innerHTML=`<div class="message-head"><span class="subject">${escapeHtml(msg.subject||'(无主题)')}</span><span class="date">${fmtDate(msg.date)}</span></div><div class="from">${escapeHtml(asText(msg.from))}</div><div class="preview">${escapeHtml(msg.preview||'')}</div>${msg.user?`<span class="chip">${escapeHtml(msg.accountName||msg.user)}</span>`:''}`; btn.onclick=()=>openMessage(msg); els.messageList.append(btn); }}
+function renderMessages(){ els.listMeta.textContent=`${state.messages.length} 封 · ${state.aggregate?'聚合':'单邮箱'} · ${visibleFolderName(state.fid)}`; els.messageList.innerHTML=''; if(!state.messages.length){els.messageList.innerHTML='<div class="empty-state"><p>暂无索引邮件，点刷新拉取。</p></div>'; return;} for(const msg of state.messages){ const btn=document.createElement('button'); btn.className=`message-item ${state.selected?.id===msg.id && state.selected?.user===msg.user?'active':''}`; btn.innerHTML=`<div class="message-head"><span class="subject">${escapeHtml(msg.subject||'(无主题)')}</span><span class="date">${fmtDate(msg.date)}</span></div><div class="from">${escapeHtml(asText(msg.from))}</div><div class="preview">${escapeHtml(msg.preview||'')}</div>${msg.user?`<span class="chip">${escapeHtml(msg.accountName||msg.user)}</span>`:''}`; btn.onclick=()=>openMessage(msg); els.messageList.append(btn); }}
 function showEmpty(){ state.selected=null; els.emptyReader.classList.remove('hidden'); els.reader.classList.add('hidden'); }
 async function openMessage(msg){ state.selected=msg; const user=msg.user||state.user; const data=await api(`/api/message?id=${encodeURIComponent(msg.id)}&user=${encodeURIComponent(user)}`); renderMessage(data.mail,user); renderMessages(); }
 function renderMessage(mail,user){ els.emptyReader.classList.add('hidden'); els.reader.classList.remove('hidden'); els.readDate.textContent=fmtDate(mail.date||mail.sentDate||mail.receivedDate); els.readSubject.textContent=mail.subject||'(无主题)'; els.readFrom.textContent=`From: ${asText(mail.from)} · ${user}`; els.readRecipients.textContent=`To: ${asText(mail.to)}${mail.cc?' · Cc: '+asText(mail.cc):''}`; const html=mail.html?.content || `<pre>${escapeHtml(mail.text?.content||'')}</pre>`; els.mailFrame.srcdoc=`<!doctype html><meta charset="utf-8"><base target="_blank"><style>body{font:15px/1.65 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;padding:22px;background:#fffdf6;color:#111}img{max-width:100%;height:auto}pre{white-space:pre-wrap}</style>${html}`; els.attachments.innerHTML=(mail.attachments||[]).map(a=>`<div class="chip">📎 ${escapeHtml(a.filename||a.id)}</div>`).join(''); }
