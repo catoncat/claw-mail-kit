@@ -12,13 +12,22 @@ It supports:
 
 Cloudflare Access protects the hosted Worker UI before users reach the mailbox app. The product screenshots below use example `@claw.163.com` mailbox identities and sample message content.
 
-![Cloudflare Access and Claw login flow](docs/images/login-flow.png)
+<p align="center">
+  <img src="docs/images/login-flow.png" alt="Cloudflare Access and Claw login flow" width="900">
+</p>
 
-![Inbox reading view](docs/images/inbox-reading.png)
-
-![Compose and send mail](docs/images/compose-send.png)
-
-![Mailbox scope and sub-mailbox controls](docs/images/mailbox-scope.png)
+<table>
+  <tr>
+    <td width="33%"><img src="docs/images/inbox-reading.png" alt="Inbox reading view"></td>
+    <td width="33%"><img src="docs/images/compose-send.png" alt="Compose and send mail"></td>
+    <td width="33%"><img src="docs/images/mailbox-scope.png" alt="Mailbox management"></td>
+  </tr>
+  <tr>
+    <td><sub>Inbox reading</sub></td>
+    <td><sub>Compose and send</sub></td>
+    <td><sub>Mailbox management</sub></td>
+  </tr>
+</table>
 
 
 ## Requirements
