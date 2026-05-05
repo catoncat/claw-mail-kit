@@ -19,7 +19,8 @@ Cloudflare Access protects the hosted Worker UI before users reach the mailbox a
 
 ![Compose and send mail](docs/images/compose-send.png)
 
-![Mailbox management](docs/images/mailbox-management.png)
+![Mailbox scope and sub-mailbox controls](docs/images/mailbox-scope.png)
+
 
 ## Requirements
 
