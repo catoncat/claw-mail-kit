@@ -25,6 +25,7 @@
   <div id="app" class="app-shell hidden">
     <nav class="app-rail" aria-label="主操作">
       <div class="rail-logo" aria-hidden="true">M</div>
+      <button id="navToggleBtn" class="rail-btn" type="button" aria-label="收起邮箱导航" title="收起邮箱导航" aria-pressed="false"><span class="rail-icon rail-icon-nav" aria-hidden="true"></span></button>
       <button id="composeBtn" class="rail-btn rail-primary" type="button" aria-label="写邮件" title="写邮件"><span class="rail-icon rail-icon-compose" aria-hidden="true"></span></button>
       <div class="rail-item active" aria-current="page" title="邮件"><span class="rail-icon rail-icon-mail" aria-hidden="true"></span><span class="sr-only">邮件</span></div>
       <div class="rail-spacer"></div>
@@ -36,22 +37,22 @@
         <h1>Claw Mail</h1>
         <p id="account">连接中…</p>
       </header>
-      <nav class="panel folder-panel" aria-label="邮箱文件夹"><div class="section-title">邮箱文件夹</div><div id="folders" class="folders"></div></nav>
-      <nav class="panel grow mailbox-panel" aria-label="邮箱范围"><div class="section-title">邮箱范围</div><div id="mailboxes" class="mailboxes"></div><button id="createMailboxBtn" class="ghost full" type="button">创建子邮箱</button></nav>
+      <nav class="panel folder-panel" aria-label="邮箱文件夹"><div class="section-title sr-only">邮箱文件夹</div><div id="folders" class="folders"></div></nav>
+      <nav class="panel grow mailbox-panel" aria-label="邮箱范围"><div class="section-title sr-only">邮箱范围</div><div id="mailboxes" class="mailboxes"></div><button id="createMailboxBtn" class="ghost full" type="button">＋ 子邮箱</button></nav>
       <div class="footer"><span class="dot"></span><span id="pollingText">Cron / 手动刷新</span></div>
     </aside>
 
     <main id="mainContent" class="mail-layout" tabindex="-1">
       <section class="toolbar" aria-label="邮件工具栏">
         <form id="searchForm" class="search-box"><label class="sr-only" for="searchInput">搜索邮件</label><input id="searchInput" placeholder="搜索邮件" /><button type="submit">搜索</button></form>
-        <label class="small-toggle"><input id="unreadOnly" type="checkbox" /> <span>只看未读</span></label>
+        <label class="small-toggle filter-toggle"><input id="unreadOnly" type="checkbox" /> <span>只看未读</span></label>
         <button id="refreshBtn" class="ghost" type="button">刷新</button>
       </section>
       <section class="content-grid">
         <section class="message-list-card" aria-label="邮件列表"><div class="list-header"><div><h2 id="listTitle">收件箱</h2><p id="listMeta">加载中…</p></div></div><div id="messageList" class="message-list"></div></section>
         <section class="reader-card" aria-label="邮件正文">
           <div id="emptyReader" class="empty-state"><div class="empty-icon" aria-hidden="true">MAIL</div><h2>选一封邮件阅读</h2><p>D1 索引负责列表，正文按需读取并缓存。</p></div>
-          <article id="reader" class="reader hidden"><header class="reader-header"><div class="reader-title-block"><div id="readDate" class="meta"></div><h2 id="readSubject"></h2><p id="readFrom" class="from-line"></p></div><div class="reader-actions"><button id="markReadBtn" class="ghost" type="button">标已读</button><button id="replyBtn" class="primary" type="button">回复</button></div></header><div id="readRecipients" class="recipient-line"></div><iframe id="mailFrame" title="邮件正文" sandbox="" class="mail-frame"></iframe><div id="attachments" class="attachments"></div></article>
+          <article id="reader" class="reader hidden"><header class="reader-header"><div class="reader-title-block"><div id="readDate" class="meta"></div><h2 id="readSubject"></h2><p id="readFrom" class="from-line"></p></div><div class="reader-actions"><button id="replyBtn" class="primary" type="button">回复</button></div></header><div id="readRecipients" class="recipient-line"></div><iframe id="mailFrame" title="邮件正文" sandbox="" class="mail-frame"></iframe><div id="attachments" class="attachments"></div></article>
         </section>
       </section>
     </main>
