@@ -1,13 +1,13 @@
 # Claw Mail Kit
 
-Claw Mail Kit is a small CLI, local web UI, and optional Cloudflare Worker UI for using Claw 163 agent mail without running OpenClaw.
+Claw Mail Kit is a repository for three related Claw 163 agent-mail surfaces: a CLI, a local browser UI, and a hosted Cloudflare Worker UI. They share protocol knowledge but have separate runtime boundaries.
 
 It supports:
 
-- reading folders, listing/searching/reading messages, sending and replying from the terminal;
-- a local browser UI served from `127.0.0.1`;
-- creating and managing Claw agent sub-mailboxes;
-- an optional private Cloudflare Worker deployment protected by Cloudflare Access, with D1-backed mailbox indexing.
+- **CLI** (`cli/`) for folders, list/search/read, send/reply, realtime watch, and agent mailbox account operations;
+- **local web UI** (`local/`) served from `127.0.0.1` for single-machine use;
+- **Cloudflare Worker UI** (`worker/`) protected by Cloudflare Access, with D1-backed mailbox indexing;
+- **agent skill package** (`skills/`) so users can install project guidance with `npx skills`.
 
 ## Screenshots
 
@@ -62,12 +62,6 @@ npm run clawmail -- list --limit 10
 npm run clawmail -- search --keyword "OpenAI" --limit 10
 npm run clawmail -- read --id '<message-id>'
 npm run clawmail -- send --to person@example.com --subject 'Hello' --body 'Message body'
-```
-
-You can also call the executable directly:
-
-```bash
-node src/clawmail.mjs list --json
 ```
 
 ## Local web UI
@@ -127,16 +121,39 @@ npm run cf:dev
 
 `DEV_BYPASS_AUTH=true` is intended only for local development.
 
+## Agent skill
+
+Install directly from GitHub:
+
+```bash
+npx skills add catoncat/claw-mail-kit --full-depth --skill claw-mail --agent codex --yes
+```
+
+Or, after cloning this repository, install from the local checkout:
+
+```bash
+npx skills add . --full-depth --skill claw-mail --agent codex --yes
+```
+
+To inspect installable skills first:
+
+```bash
+npx skills add . --full-depth --list
+```
+
 ## Repository layout
 
-- `src/clawmail.mjs` — CLI and Coremail proxy helpers.
-- `src/web.mjs` — local web server.
-- `web/` — local web UI assets.
+- `cli/` — CLI and Coremail proxy helpers.
+- `local/server.mjs` — local web server.
+- `local/public/` — local web UI assets.
 - `worker/src/` — Cloudflare Worker backend.
 - `worker/public/` — Worker UI assets.
 - `worker/migrations/` — D1 migrations.
-- `docs/` — protocol and deployment notes.
+- `skills/` — installable agent skills.
+- `docs/` — protocol, layout, deployment notes, screenshots, and references.
 - `vendor/` — inspected upstream package snapshots needed for reference.
+
+See `docs/project-layout.md` for the CLI/local/Worker boundary split.
 
 ## Security notes
 

@@ -63,7 +63,7 @@ Content-Type: application/json
 5. 邮件通知 payload 是 JSON，`type=3001`，里面有 `mailId`。
 6. 用 `mailId` 再走 HTTP `readMessage` 读取邮件。
 
-本仓库的 `src/clawmail.mjs` 直接使用官方 SDK 的 WS 实现，避免重写二进制协议。
+本仓库的 `cli/clawmail.mjs` 直接使用官方 SDK 的 WS 实现，避免重写二进制协议。
 
 ## 本地 Web UI
 
@@ -92,14 +92,14 @@ Web UI 只把 `CLAW_USER` 暴露给浏览器；`CLAW_API_KEY` 保留在本地 No
 本地 CLI 现在包装了官方 `mail-cli clawemail ...`，但仍从当前 repo 走，不需要全局 `mail-cli`：
 
 ```bash
-node src/clawmail.mjs accounts master-user --json
-node src/clawmail.mjs accounts list --json
-node src/clawmail.mjs accounts info --uid agent-demo@claw.163.com --json
-node src/clawmail.mjs accounts create --prefix bot1 --display-name "Bot 1" --type sub --json
-node src/clawmail.mjs accounts profile --uid release-bot@claw.163.com --display-name "New Name" --json
-node src/clawmail.mjs accounts enable --uid release-bot@claw.163.com --json
-node src/clawmail.mjs accounts disable --uid release-bot@claw.163.com --json
-node src/clawmail.mjs accounts delete --uid release-bot@claw.163.com --json
+node cli/clawmail.mjs accounts master-user --json
+node cli/clawmail.mjs accounts list --json
+node cli/clawmail.mjs accounts info --uid agent-demo@claw.163.com --json
+node cli/clawmail.mjs accounts create --prefix bot1 --display-name "Bot 1" --type sub --json
+node cli/clawmail.mjs accounts profile --uid release-bot@claw.163.com --display-name "New Name" --json
+node cli/clawmail.mjs accounts enable --uid release-bot@claw.163.com --json
+node cli/clawmail.mjs accounts disable --uid release-bot@claw.163.com --json
+node cli/clawmail.mjs accounts delete --uid release-bot@claw.163.com --json
 ```
 
 注意：`accounts create` 会返回一次性 auth code。本地 CLI/Web 都会把原始创建结果另存到 `.secrets/submailbox-create-*.json`，但它仍只应按一次性凭证处理。

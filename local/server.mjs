@@ -8,7 +8,7 @@ import { MailClient, MailSdkError } from '@clawemail/node-sdk';
 
 const __dirname = resolve(fileURLToPath(new URL('.', import.meta.url)));
 const ROOT = resolve(__dirname, '..');
-const WEB_ROOT = join(ROOT, 'web');
+const WEB_ROOT = join(ROOT, 'local', 'public');
 const DEFAULT_HOST = 'https://claw.163.com';
 const DEFAULT_PORT = Number(process.env.PORT || 8765);
 const FOLDER_ALIASES = {
@@ -35,7 +35,7 @@ const MAIL_CLI_CONFIG = join(ROOT, '.secrets', 'mail-cli-config.json');
 
 function ensureMailCliReady() {
   const bin = join(ROOT, 'node_modules', '.bin', 'mail-cli');
-  if (!existsSync(bin)) throw new Error('mail-cli binary missing. Run npm install in /Users/envvar/hack/mails');
+  if (!existsSync(bin)) throw new Error('mail-cli binary missing. Run npm install in the project root');
   mkdirSync(join(ROOT, '.secrets'), { recursive: true });
   if (!existsSync(MAIL_CLI_CONFIG)) {
     writeFileSync(MAIL_CLI_CONFIG, JSON.stringify({ profiles: {}, apikeyRef: 'mail-cli:apikey' }, null, 2) + '\n', { mode: 0o600 });

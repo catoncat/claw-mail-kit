@@ -1,7 +1,7 @@
 {
   "id": "email",
   "channels": ["email"],
-  "skills": ["skills/reply-user-message","skills/mail-cli"],
+  "skills": [],
   "setup": {
     "token": {
       "help": "Email credentials in format: email:password (e.g., \"user@163.com:yourpassword\")"

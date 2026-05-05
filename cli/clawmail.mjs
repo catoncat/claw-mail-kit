@@ -18,7 +18,7 @@ function usage() {
 
 Usage:
   npm run clawmail -- <command> [options]
-  node src/clawmail.mjs <command> [options]
+  node cli/clawmail.mjs <command> [options]
 
 Setup:
   auth-from-url <url|t1/code> [--env .env]     Fetch auth-url and write CLAW_USER/CLAW_API_KEY
@@ -82,7 +82,7 @@ function loadConfig() {
     timeoutMs: Number(process.env.CLAW_TIMEOUT_MS || fileEnv.CLAW_TIMEOUT_MS || 15000),
   };
   if (!cfg.user || !cfg.apiKey) {
-    throw new Error('Missing CLAW_USER or CLAW_API_KEY. Run: node src/clawmail.mjs auth-from-url <auth-url>');
+    throw new Error('Missing CLAW_USER or CLAW_API_KEY. Run: npm run clawmail -- auth-from-url <auth-url>');
   }
   return cfg;
 }

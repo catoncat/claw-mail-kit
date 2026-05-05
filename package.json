@@ -5,12 +5,12 @@
   "type": "module",
   "description": "CLI, local web UI, and Cloudflare Worker kit for Claw 163 agent mail",
   "bin": {
-    "clawmail-local": "src/clawmail.mjs"
+    "clawmail-local": "cli/clawmail.mjs"
   },
   "scripts": {
-    "clawmail": "node src/clawmail.mjs",
-    "check": "node --check src/clawmail.mjs && node --check src/web.mjs && node src/clawmail.mjs check",
-    "web": "node src/web.mjs",
+    "clawmail": "node cli/clawmail.mjs",
+    "check": "node --check cli/clawmail.mjs && node --check local/server.mjs && node cli/clawmail.mjs check",
+    "web": "node local/server.mjs",
     "cf:types": "wrangler types worker/src/worker-configuration.d.ts",
     "cf:typecheck": "npm run cf:types && tsc -p worker/tsconfig.json --noEmit",
     "cf:migrate:local": "wrangler d1 migrations apply claw_mail --local",

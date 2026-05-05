@@ -1,0 +1,3 @@
+display_name: Claw Mail Kit
+short_description: Operate a Claw Mail Kit checkout safely.
+default_prompt: Check recent Claw Mail messages using this repository's CLI, without exposing secrets.
