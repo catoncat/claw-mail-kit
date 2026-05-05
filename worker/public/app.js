@@ -61,14 +61,29 @@ async function verifyCode(e){ e.preventDefault(); const email=els.loginEmail.val
 async function loadMailboxes(){
   const data = await api('/api/mailboxes');
   els.mailboxes.innerHTML='';
-  const all=document.createElement('button'); all.className=`mailbox-row ${state.aggregate?'active':''}`; all.innerHTML='<div><strong>全部邮箱</strong><span>聚合启用邮箱</span></div><em>all</em>'; all.onclick=()=>switchScope(null,true); els.mailboxes.append(all);
+  const all=document.createElement('button');
+  all.className=`mailbox-row ${state.aggregate?'active':''}`;
+  all.type='button';
+  all.innerHTML='<div><strong>全部邮箱</strong><span>聚合启用邮箱</span></div><em>all</em>';
+  all.onclick=()=>switchScope(null,true);
+  els.mailboxes.append(all);
   for(const item of data.items){
-    const row=document.createElement('button'); row.className=`mailbox-row ${!state.aggregate && state.user===item.email?'active':''}`; row.innerHTML=`<div><strong>${escapeHtml(item.displayName||item.prefix||item.email)}</strong><span>${escapeHtml(item.email)}</span></div><em>${item.type==='primary'?'主':'子'}</em>`; row.onclick=()=>switchScope(item.email,false); els.mailboxes.append(row);
-    const actions=document.createElement('div'); actions.className='mailbox-actions';
-    const agg=document.createElement('button'); agg.textContent=item.aggregateEnabled?'退出聚合':'加入聚合'; agg.onclick=(ev)=>{ev.stopPropagation(); toggleAggregate(item)}; actions.append(agg);
-    const comm=document.createElement('button'); comm.textContent='通讯规则'; comm.onclick=(ev)=>{ev.stopPropagation(); editComm(item)}; actions.append(comm);
-    if(item.type!=='primary'){ const del=document.createElement('button'); del.textContent='删除'; del.className='danger'; del.onclick=(ev)=>{ev.stopPropagation(); deleteMailbox(item)}; actions.append(del); }
-    els.mailboxes.append(actions);
+    const active=!state.aggregate && state.user===item.email;
+    const entry=document.createElement('div');
+    entry.className=`mailbox-entry ${active?'active':''}`;
+    const row=document.createElement('button');
+    row.type='button';
+    row.className=`mailbox-row ${active?'active':''}`;
+    row.innerHTML=`<div><strong>${escapeHtml(item.displayName||item.prefix||item.email)}</strong><span>${escapeHtml(item.email)}</span></div><em>${item.type==='primary'?'主':'子'}</em>`;
+    row.onclick=()=>switchScope(item.email,false);
+    entry.append(row);
+    const actions=document.createElement('div');
+    actions.className='mailbox-actions';
+    const agg=document.createElement('button'); agg.type='button'; agg.textContent=item.aggregateEnabled?'退出聚合':'加入聚合'; agg.onclick=(ev)=>{ev.stopPropagation(); toggleAggregate(item)}; actions.append(agg);
+    const comm=document.createElement('button'); comm.type='button'; comm.textContent='通讯规则'; comm.onclick=(ev)=>{ev.stopPropagation(); editComm(item)}; actions.append(comm);
+    if(item.type!=='primary'){ const del=document.createElement('button'); del.type='button'; del.textContent='删除'; del.className='danger'; del.onclick=(ev)=>{ev.stopPropagation(); deleteMailbox(item)}; actions.append(del); }
+    entry.append(actions);
+    els.mailboxes.append(entry);
   }
 }
 async function toggleAggregate(item){ await api(`/api/mailboxes/${encodeURIComponent(item.id)}/aggregate`,{method:'POST',body:JSON.stringify({enabled:!item.aggregateEnabled})}); await loadMailboxes(); toast('聚合开关已更新'); }
@@ -98,7 +113,7 @@ async function searchMessages(q){
   const params={fid:state.fid,limit:'60',keyword:q}; if(els.unreadOnly.checked) params.unread='1';
   const data=await api(scoped('/api/search',params)); state.messages=data.messages||[]; renderMessages();
 }
-function renderMessages(){ els.listMeta.textContent=`${state.messages.length} 封 · ${state.aggregate?'聚合':'单邮箱'} · ${visibleFolderName(state.fid)}`; els.messageList.innerHTML=''; if(!state.messages.length){els.messageList.innerHTML='<div class="empty-state"><p>暂无索引邮件，点刷新拉取。</p></div>'; return;} for(const msg of state.messages){ const btn=document.createElement('button'); btn.className=`message-item ${state.selected?.id===msg.id && state.selected?.user===msg.user?'active':''}`; btn.innerHTML=`<div class="message-head"><span class="subject">${escapeHtml(msg.subject||'(无主题)')}</span><span class="date">${fmtDate(msg.date)}</span></div><div class="from">${escapeHtml(asText(msg.from))}</div><div class="preview">${escapeHtml(msg.preview||'')}</div>${msg.user?`<span class="chip">${escapeHtml(msg.accountName||msg.user)}</span>`:''}`; btn.onclick=()=>openMessage(msg); els.messageList.append(btn); }}
+function renderMessages(){ els.listMeta.textContent=`${state.messages.length} 封 · ${state.aggregate?'聚合':'单邮箱'} · ${visibleFolderName(state.fid)}`; els.messageList.innerHTML=''; if(!state.messages.length){els.messageList.innerHTML='<div class="empty-state compact"><div class="empty-icon" aria-hidden="true">0</div><p>暂无索引邮件，点刷新拉取。</p></div>'; return;} for(const msg of state.messages){ const active=state.selected?.id===msg.id && state.selected?.user===msg.user; const btn=document.createElement('button'); btn.type='button'; btn.className=`message-item ${active?'active':''} ${msg.read?'read':'unread'}`; btn.title=`${msg.subject||'(无主题)'}\n${asText(msg.from)}`; btn.innerHTML=`<div class="message-head"><span class="subject">${escapeHtml(msg.subject||'(无主题)')}</span><span class="date">${fmtDate(msg.date)}</span></div><div class="from">${escapeHtml(asText(msg.from))}</div><div class="preview">${escapeHtml(msg.preview||'')}</div>${msg.user?`<span class="chip">${escapeHtml(msg.accountName||msg.user)}</span>`:''}`; btn.onclick=()=>openMessage(msg); els.messageList.append(btn); }}
 function showEmpty(){ state.selected=null; els.emptyReader.classList.remove('hidden'); els.reader.classList.add('hidden'); }
 async function openMessage(msg){
   state.selected=msg;
@@ -138,7 +153,7 @@ function mailDocument(mail){
 }
 function renderLoadingMessage(mail,user){ els.emptyReader.classList.add('hidden'); els.reader.classList.remove('hidden'); els.readDate.textContent=fmtDate(mail.date||mail.sentDate||mail.receivedDate); els.readSubject.textContent=mail.subject||'(无主题)'; els.readFrom.textContent=`From: ${asText(mail.from)} · ${user}`; els.readRecipients.textContent=''; els.attachments.innerHTML=''; els.mailFrame.srcdoc=mailShell('<div class="empty-mail">正在加载正文…</div>'); }
 function renderMessageError(mail,user,error){ renderLoadingMessage(mail,user); els.mailFrame.srcdoc=mailShell(`<div class="empty-mail">正文加载失败：${escapeHtml(error.message)}</div>`); }
-function renderMessage(mail,user){ els.emptyReader.classList.add('hidden'); els.reader.classList.remove('hidden'); els.readDate.textContent=fmtDate(mail.date||mail.sentDate||mail.receivedDate); els.readSubject.textContent=mail.subject||'(无主题)'; els.readFrom.textContent=`From: ${asText(mail.from)} · ${user}`; els.readRecipients.textContent=`To: ${asText(mail.to)}${mail.cc?' · Cc: '+asText(mail.cc):''}`; els.mailFrame.srcdoc=mailDocument(mail); els.attachments.innerHTML=(mail.attachments||[]).map(a=>`<div class="chip">📎 ${escapeHtml(a.filename||a.id)}</div>`).join(''); }
+function renderMessage(mail,user){ els.emptyReader.classList.add('hidden'); els.reader.classList.remove('hidden'); els.readDate.textContent=fmtDate(mail.date||mail.sentDate||mail.receivedDate); els.readSubject.textContent=mail.subject||'(无主题)'; els.readFrom.textContent=`From: ${asText(mail.from)} · ${user}`; els.readRecipients.textContent=`To: ${asText(mail.to)}${mail.cc?' · Cc: '+asText(mail.cc):''}`; els.mailFrame.srcdoc=mailDocument(mail); els.attachments.innerHTML=(mail.attachments||[]).map(a=>`<div class="chip attachment-chip"><span class="file-glyph">FILE</span>${escapeHtml(a.filename||a.id)}</div>`).join(''); }
 async function refreshCurrent(){ els.refreshBtn.disabled=true; els.listMeta.textContent='刷新远端并更新 D1…'; try{ const folders=state.fid; const data=await api(`/api/claw/refresh?folders=${encodeURIComponent(folders)}`,{method:'POST'}); await Promise.all([loadFolders(), state.mode==='search'&&els.searchInput.value.trim()?searchMessages(els.searchInput.value.trim()):loadMessages()]); toast(`刷新完成：${data.refresh.messages} 条，错误 ${data.refresh.errors.length}`); }catch(e){ toast(e.message); }finally{ els.refreshBtn.disabled=false; }}
 function openComposer(reply=false){ state.replyId=reply?state.selected?.id:null; state.replyUser=reply?(state.selected?.user||state.user):null; els.composerTitle.textContent=reply?'回复邮件':'写邮件'; els.composerHint.textContent=reply?`回复 ${state.replyUser}`:`从 ${state.user||state.defaultUser||'当前邮箱'} 发送`; els.composeTo.value=''; els.composeCc.value=''; els.composeSubject.value=reply?`Re: ${state.selected?.subject||''}`:''; els.composeBody.value=''; els.composeStatus.textContent=''; els.composerDialog.showModal(); }
 async function sendCurrent(){ els.sendBtn.disabled=true; els.composeStatus.textContent='发送中…'; try{ const body={user:state.replyUser||state.user||state.defaultUser,to:els.composeTo.value,cc:els.composeCc.value,subject:els.composeSubject.value,body:els.composeBody.value,html:els.composeHtml.checked}; const path=state.replyId?'/api/reply':'/api/send'; if(state.replyId) body.id=state.replyId; const data=await api(path,{method:'POST',body:JSON.stringify(body)}); els.composeStatus.textContent='已发送'; toast(`已发送：${data.from}`); setTimeout(()=>els.composerDialog.close(),600); }catch(e){ els.composeStatus.textContent=e.message; }finally{ els.sendBtn.disabled=false; }}
