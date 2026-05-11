@@ -38,7 +38,16 @@
         <p id="account">连接中…</p>
       </header>
       <nav class="panel folder-panel" aria-label="邮箱文件夹"><div class="section-title sr-only">邮箱文件夹</div><div id="folders" class="folders"></div></nav>
-      <nav class="panel grow mailbox-panel" aria-label="邮箱范围"><div class="section-title sr-only">邮箱范围</div><div id="mailboxes" class="mailboxes"></div><button id="createMailboxBtn" class="ghost full" type="button">＋ 子邮箱</button></nav>
+      <nav class="panel grow mailbox-panel" aria-label="邮箱范围">
+        <div class="mailbox-panel-head">
+          <div class="section-title sr-only">邮箱范围</div>
+          <div class="mailbox-panel-actions">
+            <button id="allowAllMailboxesBtn" class="ghost" type="button">全部子邮箱全允许</button>
+            <button id="createMailboxBtn" class="ghost" type="button">＋ 子邮箱</button>
+          </div>
+        </div>
+        <div id="mailboxes" class="mailboxes"></div>
+      </nav>
       <div class="footer"><span class="dot"></span><span id="pollingText">Cron / 手动刷新</span></div>
     </aside>
 
@@ -59,6 +68,7 @@
   </div>
 
   <dialog id="composerDialog"><form method="dialog" id="composerForm" class="composer"><div class="composer-head"><div><h2 id="composerTitle">写邮件</h2><p id="composerHint">从当前邮箱身份发送</p></div><button value="cancel" class="icon-btn" aria-label="关闭">×</button></div><label>收件人 <input id="composeTo" autocomplete="email" /></label><label>抄送 <input id="composeCc" autocomplete="email" /></label><label>主题 <input id="composeSubject" /></label><label>正文 <textarea id="composeBody" rows="10"></textarea></label><div class="composer-actions"><label class="small-toggle"><input id="composeHtml" type="checkbox" /> <span>HTML</span></label><span id="composeStatus" role="status" aria-live="polite"></span><button id="sendBtn" type="button" class="primary">发送</button></div></form></dialog>
+  <dialog id="commDialog"><form method="dialog" id="commForm" class="composer comm-form"><div class="composer-head"><div><h2 id="commTitle">通讯规则</h2><p id="commHint">设置子邮箱的收发权限</p></div><button value="cancel" class="icon-btn" aria-label="关闭">×</button></div><div class="comm-summary"><strong id="commMailbox"></strong><span id="commMailboxMeta"></span></div><fieldset class="comm-fieldset"><legend>收发模式</legend><label class="comm-option"><input type="radio" name="commLevel" value="2" checked /><span><strong>全允许</strong><small>收件和发件都开放</small></span></label><label class="comm-option"><input type="radio" name="commLevel" value="1" /><span><strong>仅内部</strong><small>限制为内部通讯</small></span></label></fieldset><fieldset class="comm-fieldset comm-flags"><legend>高级开关</legend><label class="small-toggle"><input id="commReceiveAllow" type="checkbox" checked /> <span>允许外部收件</span></label><label class="small-toggle"><input id="commSendAllow" type="checkbox" checked /> <span>允许外部发件</span></label></fieldset><div class="composer-actions"><span id="commStatus" role="status" aria-live="polite"></span><button id="commSaveBtn" type="button" class="primary">保存设置</button></div></form></dialog>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="/app.js" type="module"></script>
 </body>

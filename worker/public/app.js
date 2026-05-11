@@ -5,13 +5,15 @@ const VISIBLE_FOLDERS = [
   { id: '4', name: '已删除' },
 ];
 const VISIBLE_FOLDER_IDS = new Set(VISIBLE_FOLDERS.map((f) => f.id));
-const state = { connected:false, aggregate:true, user:null, defaultUser:null, fid:DEFAULT_FID, title:'收件箱', mode:'folder', messages:[], selected:null, replyId:null, replyUser:null, navCollapsed:false };
+const state = { connected:false, aggregate:true, user:null, defaultUser:null, fid:DEFAULT_FID, title:'收件箱', mode:'folder', messages:[], selected:null, replyId:null, replyUser:null, navCollapsed:false, mailboxes:[], commTarget:null };
 const $ = (id) => document.getElementById(id);
 const els = {
   setup:$('setup'), app:$('app'), navToggleBtn:$('navToggleBtn'), accessUser:$('accessUser'), loginEmail:$('loginEmail'), loginCode:$('loginCode'), sendCodeBtn:$('sendCodeBtn'), verifyCodeBtn:$('verifyCodeBtn'), connectForm:$('connectForm'), setupStatus:$('setupStatus'),
   account:$('account'), folders:$('folders'), mailboxes:$('mailboxes'), createMailboxBtn:$('createMailboxBtn'), composeBtn:$('composeBtn'), refreshBtn:$('refreshBtn'), searchForm:$('searchForm'), searchInput:$('searchInput'), unreadOnly:$('unreadOnly'), listTitle:$('listTitle'), listMeta:$('listMeta'), messageList:$('messageList'),
   emptyReader:$('emptyReader'), reader:$('reader'), readDate:$('readDate'), readSubject:$('readSubject'), readFrom:$('readFrom'), readRecipients:$('readRecipients'), mailFrame:$('mailFrame'), attachments:$('attachments'), deleteBtn:$('deleteBtn'), replyBtn:$('replyBtn'),
-  composerDialog:$('composerDialog'), composerForm:$('composerForm'), composerTitle:$('composerTitle'), composerHint:$('composerHint'), composeTo:$('composeTo'), composeCc:$('composeCc'), composeSubject:$('composeSubject'), composeBody:$('composeBody'), composeHtml:$('composeHtml'), composeStatus:$('composeStatus'), sendBtn:$('sendBtn'), toast:$('toast')
+  composerDialog:$('composerDialog'), composerForm:$('composerForm'), composerTitle:$('composerTitle'), composerHint:$('composerHint'), composeTo:$('composeTo'), composeCc:$('composeCc'), composeSubject:$('composeSubject'), composeBody:$('composeBody'), composeHtml:$('composeHtml'), composeStatus:$('composeStatus'), sendBtn:$('sendBtn'),
+  commDialog:$('commDialog'), commForm:$('commForm'), commTitle:$('commTitle'), commHint:$('commHint'), commMailbox:$('commMailbox'), commMailboxMeta:$('commMailboxMeta'), commReceiveAllow:$('commReceiveAllow'), commSendAllow:$('commSendAllow'), commStatus:$('commStatus'), commSaveBtn:$('commSaveBtn'),
+  toast:$('toast'), allowAllMailboxesBtn:$('allowAllMailboxesBtn')
 };
 
 async function api(path, options={}) {
@@ -37,6 +39,21 @@ function visibleFolders(remoteFolders){
     unreadCount: byId.get(folder.id)?.unreadCount || 0,
     messageCount: byId.get(folder.id)?.messageCount || 0,
   }));
+}
+function commLevelLabel(item){
+  const level = Number(item?.commLevel ?? 2);
+  if (level === 2) return '全允许';
+  if (level === 1) return '仅内部';
+  if (level === 0) return '关闭';
+  return '未设置';
+}
+function commMetaLabel(item){
+  const level = Number(item?.commLevel ?? 2);
+  const receive = Number(item?.extReceiveType ?? 1);
+  const send = Number(item?.extSendType ?? 1);
+  if (level === 2) return `收件${receive ? '开' : '关'} · 发件${send ? '开' : '关'}`;
+  if (level === 1) return '仅内部通讯';
+  return '未启用';
 }
 function setSetupStatus(value){ els.setupStatus.textContent = typeof value === 'string' ? value : JSON.stringify(value,null,2); }
 function setNavCollapsed(collapsed){ state.navCollapsed=collapsed; els.app.classList.toggle('nav-collapsed', collapsed); if(els.navToggleBtn){ els.navToggleBtn.setAttribute('aria-pressed', String(collapsed)); els.navToggleBtn.setAttribute('aria-label', collapsed?'展开邮箱导航':'收起邮箱导航'); els.navToggleBtn.title=collapsed?'展开邮箱导航':'收起邮箱导航'; } try{ localStorage.setItem('claw.navCollapsed', collapsed?'1':'0'); }catch{} }
@@ -65,6 +82,7 @@ async function verifyCode(e){ e.preventDefault(); const email=els.loginEmail.val
 
 async function loadMailboxes(){
   const data = await api('/api/mailboxes');
+  state.mailboxes = data.items || [];
   els.mailboxes.innerHTML='';
   const all=document.createElement('button');
   all.className=`mailbox-row ${state.aggregate?'active':''}`;
@@ -72,7 +90,7 @@ async function loadMailboxes(){
   all.innerHTML='<div><strong>全部邮箱</strong><span>聚合启用邮箱</span></div><em>ALL</em>';
   all.onclick=()=>switchScope(null,true);
   els.mailboxes.append(all);
-  for(const item of data.items){
+  for(const item of state.mailboxes){
     const active=!state.aggregate && state.user===item.email;
     const entry=document.createElement('div');
     entry.className=`mailbox-entry ${active?'active':''}`;
@@ -84,17 +102,85 @@ async function loadMailboxes(){
     entry.append(row);
     const actions=document.createElement('div');
     actions.className='mailbox-actions';
-    const agg=document.createElement('button'); agg.type='button'; agg.textContent=item.aggregateEnabled?'移出':'加入'; agg.title=item.aggregateEnabled?'退出聚合':'加入聚合'; agg.onclick=(ev)=>{ev.stopPropagation(); toggleAggregate(item)}; actions.append(agg);
-    const comm=document.createElement('button'); comm.type='button'; comm.textContent='规则'; comm.title='通讯规则'; comm.onclick=(ev)=>{ev.stopPropagation(); editComm(item)}; actions.append(comm);
+    const badge=document.createElement('span');
+    badge.className='mailbox-comm-badge';
+    badge.textContent=`${commLevelLabel(item)} · ${commMetaLabel(item)}`;
+    actions.append(badge);
+    const allAllow=document.createElement('button');
+    allAllow.type='button';
+    allAllow.textContent='全允';
+    allAllow.title='将该邮箱设为全允许';
+    allAllow.onclick=(ev)=>{ev.stopPropagation(); setFullAllow(item);};
+    actions.append(allAllow);
+    const comm=document.createElement('button');
+    comm.type='button';
+    comm.textContent='设置';
+    comm.title='打开通讯规则面板';
+    comm.onclick=(ev)=>{ev.stopPropagation(); openCommDialog(item);};
+    actions.append(comm);
+    const agg=document.createElement('button'); agg.type='button'; agg.textContent=item.aggregateEnabled?'移出':'聚合'; agg.title=item.aggregateEnabled?'退出聚合':'加入聚合'; agg.onclick=(ev)=>{ev.stopPropagation(); toggleAggregate(item)}; actions.append(agg);
     if(item.type!=='primary'){ const del=document.createElement('button'); del.type='button'; del.textContent='删'; del.title='删除子邮箱'; del.className='danger'; del.onclick=(ev)=>{ev.stopPropagation(); deleteMailbox(item)}; actions.append(del); }
     entry.append(actions);
     els.mailboxes.append(entry);
   }
 }
 async function toggleAggregate(item){ await api(`/api/mailboxes/${encodeURIComponent(item.id)}/aggregate`,{method:'POST',body:JSON.stringify({enabled:!item.aggregateEnabled})}); await loadMailboxes(); toast('聚合已更新'); }
-async function editComm(item){ const raw=prompt('通讯规则 JSON', JSON.stringify({commLevel:item.commLevel ?? 2, extReceiveType:item.extReceiveType ?? 1, extSendType:item.extSendType ?? 1})); if(!raw) return; const body=JSON.parse(raw); await api(`/api/mailboxes/${encodeURIComponent(item.id)}/comm-settings`,{method:'POST',body:JSON.stringify(body)}); await loadMailboxes(); toast('通讯规则已同步'); }
+async function setFullAllow(item){ await api(`/api/mailboxes/${encodeURIComponent(item.id)}/comm-settings`,{method:'POST',body:JSON.stringify({commLevel:2,extReceiveType:1,extSendType:1})}); await loadMailboxes(); toast(`已全允许：${item.email}`); }
+function openCommDialog(item){
+  state.commTarget = item;
+  els.commMailbox.textContent = item.displayName || item.email;
+  els.commMailboxMeta.textContent = item.email;
+  const level = Number(item.commLevel ?? 2);
+  const radios = [...els.commForm.querySelectorAll('input[name="commLevel"]')];
+  radios.forEach((input) => { input.checked = Number(input.value) === level; });
+  els.commReceiveAllow.checked = Number(item.extReceiveType ?? 1) !== 0;
+  els.commSendAllow.checked = Number(item.extSendType ?? 1) !== 0;
+  updateCommDialogControls();
+  els.commStatus.textContent = '';
+  els.commDialog.showModal();
+}
+function updateCommDialogControls(){
+  const level = Number(els.commForm.querySelector('input[name="commLevel"]:checked')?.value || 2);
+  const enabled = level === 2;
+  els.commReceiveAllow.disabled = !enabled;
+  els.commSendAllow.disabled = !enabled;
+  els.commHint.textContent = enabled ? '全允许时可单独控制收件和发件开关。' : '仅内部模式会关闭外部收发。';
+}
+async function saveCommSettings(){
+  const item = state.commTarget;
+  if(!item) return;
+  els.commSaveBtn.disabled = true;
+  els.commStatus.textContent = '保存中…';
+  try{
+    const level = Number(els.commForm.querySelector('input[name="commLevel"]:checked')?.value || 2);
+    const body = level === 2
+      ? { commLevel: 2, extReceiveType: els.commReceiveAllow.checked ? 1 : 0, extSendType: els.commSendAllow.checked ? 1 : 0 }
+      : { commLevel: 1 };
+    await api(`/api/mailboxes/${encodeURIComponent(item.id)}/comm-settings`,{method:'POST',body:JSON.stringify(body)});
+    await loadMailboxes();
+    els.commStatus.textContent = '已保存';
+    toast(`通讯规则已更新：${item.email}`);
+    setTimeout(()=>els.commDialog.close(),400);
+  }catch(e){
+    els.commStatus.textContent = e.message;
+  }finally{
+    els.commSaveBtn.disabled = false;
+  }
+}
 async function deleteMailbox(item){ if(!confirm(`删除子邮箱 ${item.email}？`)) return; await api(`/api/mailboxes/${encodeURIComponent(item.id)}`,{method:'DELETE'}); await loadMailboxes(); toast('已删除'); }
 async function createMailbox(){ const suffix=prompt('子邮箱后缀 suffix（小写字母/数字）'); if(!suffix) return; const displayName=prompt('显示名（可选）', suffix) || suffix; const data=await api('/api/mailboxes',{method:'POST',body:JSON.stringify({suffix,displayName})}); await loadMailboxes(); toast(`已创建 ${data.item?.email || suffix}`); }
+async function setAllSubMailboxesFullAllow(){
+  const targets = state.mailboxes.filter((item) => item.type !== 'primary' && item.status !== 'deleted');
+  if(!targets.length) return toast('没有可设置的子邮箱');
+  els.allowAllMailboxesBtn.disabled = true;
+  try{
+    for(const item of targets) await api(`/api/mailboxes/${encodeURIComponent(item.id)}/comm-settings`,{method:'POST',body:JSON.stringify({commLevel:2,extReceiveType:1,extSendType:1})});
+    await loadMailboxes();
+    toast(`已统一设置 ${targets.length} 个子邮箱为全允许`);
+  }finally{
+    els.allowAllMailboxesBtn.disabled = false;
+  }
+}
 
 async function loadFolders(){
   els.folders.innerHTML='';
@@ -166,5 +252,5 @@ async function deleteSelected(){ if(!state.selected) return; const user=state.se
 async function refreshCurrent(){ els.refreshBtn.disabled=true; els.listMeta.textContent='刷新远端并更新 D1…'; try{ const folders=state.fid; const data=await api(`/api/claw/refresh?folders=${encodeURIComponent(folders)}`,{method:'POST'}); await Promise.all([loadFolders(), state.mode==='search'&&els.searchInput.value.trim()?searchMessages(els.searchInput.value.trim()):loadMessages()]); toast(`刷新完成：${data.refresh.messages} 条，错误 ${data.refresh.errors.length}`); }catch(e){ toast(e.message); }finally{ els.refreshBtn.disabled=false; }}
 function openComposer(reply=false){ state.replyId=reply?state.selected?.id:null; state.replyUser=reply?(state.selected?.user||state.user):null; els.composerTitle.textContent=reply?'回复邮件':'写邮件'; els.composerHint.textContent=reply?`回复 ${state.replyUser}`:`从 ${state.user||state.defaultUser||'当前邮箱'} 发送`; els.composeTo.value=''; els.composeCc.value=''; els.composeSubject.value=reply?`Re: ${state.selected?.subject||''}`:''; els.composeBody.value=''; els.composeStatus.textContent=''; els.composerDialog.showModal(); }
 async function sendCurrent(){ els.sendBtn.disabled=true; els.composeStatus.textContent='发送中…'; try{ const body={user:state.replyUser||state.user||state.defaultUser,to:els.composeTo.value,cc:els.composeCc.value,subject:els.composeSubject.value,body:els.composeBody.value,html:els.composeHtml.checked}; const path=state.replyId?'/api/reply':'/api/send'; if(state.replyId) body.id=state.replyId; const data=await api(path,{method:'POST',body:JSON.stringify(body)}); els.composeStatus.textContent='已发送'; toast(`已发送：${data.from}`); setTimeout(()=>els.composerDialog.close(),600); }catch(e){ els.composeStatus.textContent=e.message; }finally{ els.sendBtn.disabled=false; }}
-els.sendCodeBtn.onclick=sendCode; els.connectForm.onsubmit=verifyCode; els.createMailboxBtn.onclick=createMailbox; els.refreshBtn.onclick=refreshCurrent; els.composeBtn.onclick=()=>openComposer(false); if(els.navToggleBtn) els.navToggleBtn.onclick=()=>setNavCollapsed(!state.navCollapsed); els.deleteBtn.onclick=deleteSelected; els.replyBtn.onclick=()=>openComposer(true); els.sendBtn.onclick=sendCurrent; els.searchForm.onsubmit=(e)=>{e.preventDefault(); const q=els.searchInput.value.trim(); if(q) searchMessages(q); else loadMessages();}; els.unreadOnly.onchange=()=>state.mode==='search'&&els.searchInput.value.trim()?searchMessages(els.searchInput.value.trim()):loadMessages();
+els.sendCodeBtn.onclick=sendCode; els.connectForm.onsubmit=verifyCode; els.createMailboxBtn.onclick=createMailbox; els.allowAllMailboxesBtn.onclick=setAllSubMailboxesFullAllow; els.refreshBtn.onclick=refreshCurrent; els.composeBtn.onclick=()=>openComposer(false); if(els.navToggleBtn) els.navToggleBtn.onclick=()=>setNavCollapsed(!state.navCollapsed); els.deleteBtn.onclick=deleteSelected; els.replyBtn.onclick=()=>openComposer(true); els.sendBtn.onclick=sendCurrent; els.commSaveBtn.onclick=saveCommSettings; els.commForm.addEventListener('change', updateCommDialogControls); els.searchForm.onsubmit=(e)=>{e.preventDefault(); const q=els.searchInput.value.trim(); if(q) searchMessages(q); else loadMessages();}; els.unreadOnly.onchange=()=>state.mode==='search'&&els.searchInput.value.trim()?searchMessages(els.searchInput.value.trim()):loadMessages();
 bootstrap();

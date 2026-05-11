@@ -341,6 +341,27 @@ h2 {
   border-bottom: var(--slock-border-heavy);
 }
 .grow { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.mailbox-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mailbox-panel-head {
+  flex: 0 0 auto;
+}
+.mailbox-panel-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+}
+.mailbox-panel-actions button {
+  width: 100%;
+  min-height: var(--hit-sm);
+  font-size: 11px;
+}
+.mailboxes {
+  min-height: 0;
+}
 .section-title {
   margin-bottom: 12px;
   color: var(--slock-muted);
@@ -377,10 +398,16 @@ h2 {
 .mailbox-entry {
   position: relative;
   margin-bottom: 7px;
+  border: var(--slock-border);
+  background: var(--slock-paper-2);
+  box-shadow: var(--slock-shadow-xs);
 }
 .mailbox-entry > .mailbox-row {
   margin-bottom: 0;
-  padding-right: 34px;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding-right: 8px;
 }
 .mailbox-row div { min-width: 0; }
 .mailbox-row strong,
@@ -398,35 +425,27 @@ h2 {
   font: italic 900 13px/1 var(--font-mono);
 }
 .mailbox-actions {
-  position: absolute;
-  top: 50%;
-  right: 7px;
-  z-index: 3;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: max-content;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translate(6px, -50%);
-  transition-property: opacity, transform, visibility;
-  transition-duration: 140ms;
-  transition-timing-function: cubic-bezier(.2, 0, 0, 1);
+  padding: 0 7px 7px;
 }
-.mailbox-entry:hover .mailbox-actions,
-.mailbox-entry:focus-within .mailbox-actions,
-.mailbox-entry.active .mailbox-actions {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translate(0, -50%);
+.mailbox-comm-badge {
+  flex: 1 1 100%;
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  overflow: hidden;
+  color: var(--slock-muted);
+  font: 850 10px/1.2 var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.mailbox-entry:hover .mailbox-row em,
-.mailbox-entry:focus-within .mailbox-row em,
-.mailbox-entry.active .mailbox-row em { opacity: 0; }
 .mailbox-actions button {
-  min-width: 34px;
+  flex: 1 0 auto;
+  min-width: 42px;
   min-height: var(--hit-sm);
   padding: 0 6px;
   font-size: 11px;
@@ -759,13 +778,81 @@ dialog::backdrop { background: rgba(17, 17, 17, .35); }
   gap: 8px;
   align-items: center;
 }
+.comm-form { max-width: 560px; }
+.comm-summary {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 2px;
+  padding: 10px 12px;
+  border: var(--slock-border);
+  background: var(--slock-paper-2);
+}
+.comm-summary strong {
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.comm-summary span {
+  overflow: hidden;
+  color: var(--slock-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.comm-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 8px;
+}
+.comm-fieldset + .comm-fieldset { margin-top: 4px; }
+.comm-fieldset legend {
+  margin-bottom: 8px;
+  color: var(--slock-muted);
+  font: 900 12px/1 var(--font-mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.comm-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: var(--hit);
+  padding: 10px 11px;
+  border: var(--slock-border);
+  background: var(--slock-paper-2);
+}
+.comm-option input {
+  width: 16px;
+  min-height: 16px;
+  margin-top: 3px;
+  padding: 0;
+}
+.comm-option span { display: grid; gap: 2px; }
+.comm-option strong { font-size: 14px; }
+.comm-option small {
+  color: var(--slock-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+.comm-flags { grid-template-columns: 1fr 1fr; }
+.comm-flags .small-toggle {
+  padding: 10px 11px;
+  border: var(--slock-border);
+  background: var(--slock-paper-2);
+}
 .icon-btn {
   width: var(--hit);
   min-width: var(--hit);
   padding: 0;
   font-size: 24px;
 }
-#composeStatus { color: var(--slock-muted); font-weight: 800; }
+#composeStatus,
+#commStatus { color: var(--slock-muted); font-weight: 800; }
 
 @media (prefers-reduced-motion: reduce) {
   *,
